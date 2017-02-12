@@ -51,16 +51,23 @@ class LoopClosing;
 class System;
 
 class Tracking
-{  
+{
 
 public:
     Tracking(System* pSys, ORBVocabulary* pVoc, FrameDrawer* pFrameDrawer, MapDrawer* pMapDrawer, Map* pMap,
              KeyFrameDatabase* pKFDB, const string &strSettingPath, const int sensor);
 
+    //When the tracking is not the mainThread,just Run...
+    void Run();
+    void SetAssistant();
+    bool CheckAssistant();
+
     // Preprocess the input and call Track(). Extract features and performs stereo matching.
     cv::Mat GrabImageStereo(const cv::Mat &imRectLeft,const cv::Mat &imRectRight, const double &timestamp);
     cv::Mat GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const double &timestamp);
     cv::Mat GrabImageMonocular(const cv::Mat &im, const double &timestamp);
+    //assistant tracking thread
+    cv::Mat GrabImageMonocular_a(const cv::Mat &im, const double &timestamp);
 
     void SetLocalMapper(LocalMapping* pLocalMapper);
     void SetLoopClosing(LoopClosing* pLoopClosing);
@@ -126,6 +133,8 @@ protected:
     // Map initialization for monocular
     void MonocularInitialization();
     void CreateInitialMapMonocular();
+    //initial the assistant tracking monocular
+    void MonocularInitialization_a();
 
     void CheckReplacedInLastFrame();
     bool TrackReferenceKeyFrame();
@@ -169,10 +178,10 @@ protected:
     KeyFrame* mpReferenceKF;
     std::vector<KeyFrame*> mvpLocalKeyFrames;
     std::vector<MapPoint*> mvpLocalMapPoints;
-    
+
     // System
     System* mpSystem;
-    
+
     //Drawers
     Viewer* mpViewer;
     FrameDrawer* mpFrameDrawer;
@@ -214,6 +223,13 @@ protected:
     bool mbRGB;
 
     list<MapPoint*> mlpTemporalPoints;
+
+private:
+    //Assistant tracking thread
+    cv::Mat mCurrentImGray_a;
+    double mCurrentTimeStamp;
+    bool bInit_a;
+    bool bAssistant;
 };
 
 } //namespace ORB_SLAM

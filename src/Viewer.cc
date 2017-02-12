@@ -18,6 +18,10 @@
 * along with ORB-SLAM2. If not, see <http://www.gnu.org/licenses/>.
 */
 
+#define _DEBUG_
+#ifdef _DEBUG_
+#endif
+
 #include "Viewer.h"
 #include <pangolin/pangolin.h>
 
@@ -26,8 +30,8 @@
 namespace ORB_SLAM2
 {
 
-Viewer::Viewer(System* pSystem, FrameDrawer *pFrameDrawer, MapDrawer *pMapDrawer, Tracking *pTracking, const string &strSettingPath):
-    mpSystem(pSystem), mpFrameDrawer(pFrameDrawer),mpMapDrawer(pMapDrawer), mpTracker(pTracking),
+Viewer::Viewer(System* pSystem, FrameDrawer *pFrameDrawer,FrameDrawer *pFrameDrawer_a, MapDrawer *pMapDrawer, Tracking *pTracking,Tracking *pTracking_a, const string &strSettingPath):
+    mpSystem(pSystem), mpFrameDrawer(pFrameDrawer),mpFrameDrawer_a(pFrameDrawer_a),mpMapDrawer(pMapDrawer), mpTracker(pTracking),mpTracker_a(pTracking_a),
     mbFinishRequested(false), mbFinished(true), mbStopped(true), mbStopRequested(false)
 {
     cv::FileStorage fSettings(strSettingPath, cv::FileStorage::READ);
@@ -88,6 +92,7 @@ void Viewer::Run()
     Twc.SetIdentity();
 
     cv::namedWindow("ORB-SLAM2: Current Frame");
+    cv::namedWindow("ORB-SLAM2: Current Frame(assistant)");
 
     bool bFollow = true;
     bool bLocalizationMode = false;
@@ -135,7 +140,10 @@ void Viewer::Run()
         pangolin::FinishFrame();
 
         cv::Mat im = mpFrameDrawer->DrawFrame();
+        cv::Mat im_a = mpFrameDrawer_a->DrawFrame();
+
         cv::imshow("ORB-SLAM2: Current Frame",im);
+        cv::imshow("ORB-SLAM2: Current Frame(assistant)",im_a);
         cv::waitKey(mT);
 
         if(menuReset)

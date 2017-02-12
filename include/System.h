@@ -77,6 +77,9 @@ public:
     // Returns the camera pose (empty if tracking fails).
     cv::Mat TrackMonocular(const cv::Mat &im, const double &timestamp);
 
+    //assistant camera
+    cv::Mat TrackMonocular_a(const cv::Mat &im, const double &timestamp);
+
     // This stops local mapping thread (map building) and performs only camera tracking.
     void ActivateLocalizationMode();
     // This resumes local mapping thread and performs SLAM again.
@@ -140,6 +143,8 @@ private:
     // It also decides when to insert a new keyframe, create some new MapPoints and
     // performs relocalization if tracking fails.
     Tracking* mpTracker;
+    //assistant tracking thread
+    Tracking* mpTracker_a;
 
     // Local Mapper. It manages the local map and performs local bundle adjustment.
     LocalMapping* mpLocalMapper;
@@ -150,15 +155,22 @@ private:
 
     // The viewer draws the map and the current camera pose. It uses Pangolin.
     Viewer* mpViewer;
+    //assistant tracking thread
+    Viewer* mpViewer_a;
 
     FrameDrawer* mpFrameDrawer;
     MapDrawer* mpMapDrawer;
+    //assistant tracking thread
+    FrameDrawer* mpFrameDrawer_a;
 
     // System threads: Local Mapping, Loop Closing, Viewer.
     // The Tracking thread "lives" in the main execution thread that creates the System object.
     std::thread* mptLocalMapping;
     std::thread* mptLoopClosing;
     std::thread* mptViewer;
+    //assistant tracking thread
+    std::thread* mptViewer_a;
+    std::thread* mptTraking_a;
 
     // Reset flag
     std::mutex mMutexReset;
@@ -174,6 +186,8 @@ private:
     std::vector<MapPoint*> mTrackedMapPoints;
     std::vector<cv::KeyPoint> mTrackedKeyPointsUn;
     std::mutex mMutexState;
+    //current tcw;
+    cv::Mat mCurrentTcw;
 };
 
 }// namespace ORB_SLAM

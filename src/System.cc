@@ -79,12 +79,19 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
 
     //Create Drawers. These are used by the Viewer
     mpFrameDrawer = new FrameDrawer(mpMap);
+    mpFrameDrawer_a = new FrameDrawer(mpMap);
     mpMapDrawer = new MapDrawer(mpMap, strSettingsFile);
 
     //Initialize the Tracking thread
     //(it will live in the main thread of execution, the one that called this constructor)
     mpTracker = new Tracking(this, mpVocabulary, mpFrameDrawer, mpMapDrawer,
                              mpMap, mpKeyFrameDatabase, strSettingsFile, mSensor);
+
+    //Initialize the assistant tracking thread and launch
+    mpTracker_a = new Tracking(this, mpVocabulary, mpFrameDrawer_a, mpMapDrawer,
+                             mpMap, mpKeyFrameDatabase, strSettingsFile, mSensor);
+    mpTracker_a->SetAssistant();
+    //mptTraking_a = new thread(&ORB_SLAM2::Tracking::Run,mpTracker_a);
 
     //Initialize the Local Mapping thread and launch
     mpLocalMapper = new LocalMapping(mpMap, mSensor==MONOCULAR);
@@ -97,14 +104,22 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     //Initialize the Viewer thread and launch
     if(bUseViewer)
     {
-        mpViewer = new Viewer(this, mpFrameDrawer,mpMapDrawer,mpTracker,strSettingsFile);
+        mpViewer = new Viewer(this, mpFrameDrawer,mpFrameDrawer_a,mpMapDrawer,mpTracker,mpTracker_a,strSettingsFile);
         mptViewer = new thread(&Viewer::Run, mpViewer);
         mpTracker->SetViewer(mpViewer);
+
+        //Viewer for assistant tracking thread
+        //mpViewer_a = new Viewer(this, mpFrameDrawer,mpMapDrawer,mpTracker_a,strSettingsFile);
+        //mptViewer_a = new thread(&Viewer::Run, mpViewer_a);
+        mpTracker_a->SetViewer(mpViewer);
     }
 
     //Set pointers between threads
     mpTracker->SetLocalMapper(mpLocalMapper);
     mpTracker->SetLoopClosing(mpLoopCloser);
+
+    mpTracker_a->SetLocalMapper(mpLocalMapper);
+    mpTracker_a->SetLoopClosing(mpLoopCloser);
 
     mpLocalMapper->SetTracker(mpTracker);
     mpLocalMapper->SetLoopCloser(mpLoopCloser);
@@ -119,7 +134,7 @@ cv::Mat System::TrackStereo(const cv::Mat &imLeft, const cv::Mat &imRight, const
     {
         cerr << "ERROR: you called TrackStereo but input sensor was not set to STEREO." << endl;
         exit(-1);
-    }   
+    }
 
     // Check mode change
     {
@@ -170,7 +185,7 @@ cv::Mat System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap, const doub
     {
         cerr << "ERROR: you called TrackRGBD but input sensor was not set to RGBD." << endl;
         exit(-1);
-    }    
+    }
 
     // Check mode change
     {
@@ -259,10 +274,71 @@ cv::Mat System::TrackMonocular(const cv::Mat &im, const double &timestamp)
 
     cv::Mat Tcw = mpTracker->GrabImageMonocular(im,timestamp);
 
+    //if the assistant tracking thread has not been initial, initial it
+    // if(mpTracker_a->mState==0 || mpTracker_a->mState==1 ) //0=NO_IMAGES_YET
+    // {
+    //     std::cout << "initial assistant tracker" << std::endl;
+    //     mpTracker_a->GrabImageMonocular_a(im,timestamp);
+    // }
+
     unique_lock<mutex> lock2(mMutexState);
     mTrackingState = mpTracker->mState;
     mTrackedMapPoints = mpTracker->mCurrentFrame.mvpMapPoints;
     mTrackedKeyPointsUn = mpTracker->mCurrentFrame.mvKeysUn;
+
+    return Tcw;
+}
+
+
+cv::Mat System::TrackMonocular_a(const cv::Mat &im, const double &timestamp)
+{
+
+    if(mSensor!=MONOCULAR)
+    {
+        cerr << "ERROR: you called TrackMonocular but input sensor was not set to Monocular." << endl;
+        exit(-1);
+    }
+
+    // Check mode change
+    {
+        unique_lock<mutex> lock(mMutexMode);
+        if(mbActivateLocalizationMode)
+        {
+            mpLocalMapper->RequestStop();
+
+            // Wait until Local Mapping has effectively stopped
+            while(!mpLocalMapper->isStopped())
+            {
+                usleep(1000);
+            }
+
+            mpTracker_a->InformOnlyTracking(true);
+            mbActivateLocalizationMode = false;
+        }
+        if(mbDeactivateLocalizationMode)
+        {
+            mpTracker_a->InformOnlyTracking(false);
+            mpLocalMapper->Release();
+            mbDeactivateLocalizationMode = false;
+        }
+    }
+
+    // Check reset
+    {
+    unique_lock<mutex> lock(mMutexReset);
+    if(mbReset)
+    {
+        mpTracker_a->Reset();
+        mbReset = false;
+    }
+    }
+
+    cv::Mat Tcw = mpTracker_a->GrabImageMonocular_a(im,timestamp);
+
+    unique_lock<mutex> lock2(mMutexState);
+    //mTrackingState = mpTracker->mState;
+    //mTrackedMapPoints = mpTracker->mCurrentFrame.mvpMapPoints;
+    //mTrackedKeyPointsUn = mpTracker->mCurrentFrame.mvKeysUn;
 
     return Tcw;
 }
