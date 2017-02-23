@@ -43,7 +43,77 @@ class KeyFrame;
 class Frame
 {
 public:
-    Frame();
+    //for Sharing Map
+    //---------------------------------------------------------------------------
+    void Show(){
+        std::cout<< "public:" << std::endl << std::endl;
+
+        std::cout<< "mTimeStamp:" << mTimeStamp << std::endl;
+        std::cout<< "mK:" << mK << std::endl;
+        std::cout<< "fx:" << fx << std::endl;
+        std::cout<< "fy:" << fy << std::endl;
+        std::cout<< "cx:" << cx << std::endl;
+        std::cout<< "cy:" << cy << std::endl;
+        std::cout<< "invfx:" << invfx << std::endl;
+        std::cout<< "invfy:" << invfy << std::endl;
+        std::cout<< "mDistCoef:" << mDistCoef << std::endl;
+        std::cout<< "mbf:" << mbf << std::endl;
+        std::cout<< "mb:" << mb << std::endl;
+        std::cout<< "mThDepth:" << mThDepth << std::endl << std::endl;
+
+        std::cout<< "N:" << N << std::endl << std::endl;
+
+        // std::cout<< "mvKeys:" << mvKeys.size() << std::endl;
+        // std::cout<< "mvKeysRight:" << mvKeysRight.size() << std::endl;
+        std::cout<< "mvKeysUn:" << mvKeysUn.size() << std::endl;
+        // std::cout<< "mvuRight:" << mvuRight.size() << std::endl;             //-1
+        // std::cout<< "mvDepth:" << mvDepth.size() << std::endl << std::endl;  //-1
+
+        std::cout<< "mBowVec:" << mBowVec << std::endl;
+        // for (size_t i = 0; i < mvuRight.size(); i++) {
+            // std::cout<< "mvuRight["<<i<<"]:" << mvuRight[i] << std::endl;
+        // }
+        std::cout<< "mFeatVec:" << mFeatVec << std::endl;
+        std::cout<< "mDescriptors:" << mDescriptors.rows << " x " << mDescriptors.cols << std::endl;
+        std::cout<< "mDescriptorsRight:" << mDescriptorsRight << std::endl << std::endl;
+
+        std::cout<< "mvpMapPoints:" << mvpMapPoints.size() << std::endl;
+        std::cout<< "mvbOutlier:" << mvbOutlier.size() << std::endl << std::endl;
+
+        std::cout<< "mfGridElementWidthInv:" << mfGridElementWidthInv << std::endl;
+        std::cout<< "mfGridElementHeightInv:" << mfGridElementHeightInv << std::endl;
+        // std::cout<< "mGrid[FRAME_GRID_COLS][FRAME_GRID_ROWS]:" << mGrid.size() << std::endl << std::endl;
+
+        std::cout<< "mTcw:" << mTcw << std::endl << std::endl;
+
+        std::cout<< "nNextId:" << nNextId << std::endl;
+        std::cout<< "mnId:" << mnId << std::endl << std::endl;
+
+        std::cout<< "mnScaleLevels:" << mnScaleLevels << std::endl;
+        std::cout<< "mfScaleFactor:" << mfScaleFactor << std::endl;
+        std::cout<< "mfLogScaleFactor:" << mfLogScaleFactor << std::endl;
+        std::cout<< "mvScaleFactors:" << mvScaleFactors.size() << std::endl;
+        std::cout<< "mvInvScaleFactors:" << mvInvScaleFactors.size() << std::endl;
+        std::cout<< "mvLevelSigma2:" << mvLevelSigma2.size() << std::endl;
+        std::cout<< "mvInvLevelSigma2:" << mvInvLevelSigma2.size() << std::endl << std::endl;
+
+        std::cout<< "mnMinX:" << mnMinX << std::endl;
+        std::cout<< "mnMaxX:" << mnMaxX << std::endl;
+        std::cout<< "mnMinY:" << mnMinY << std::endl;
+        std::cout<< "mnMaxY:" << mnMaxY << std::endl;
+        std::cout<< "mbInitialComputations:" << mbInitialComputations << std::endl << std::endl;
+
+        std::cout<< "private:" << std::endl << std::endl;
+        std::cout<< "mRcw:" << mRcw << std::endl;
+        std::cout<< "mtcw:" << mtcw << std::endl;
+        std::cout<< "mRwc:" << mRwc << std::endl;
+        std::cout<< "mOw:" << mOw << std::endl;
+        std::cout<< "end frame" << std::endl << std::endl << std::endl;
+
+    }
+    //---------------------------------------------------------------------------
+
+    Frame(){};
 
     // Copy constructor.
     Frame(const Frame &frame);
@@ -99,6 +169,11 @@ public:
     cv::Mat UnprojectStereo(const int &i);
 
 public:
+    //for Sharing Map
+    //---------------------------------------------------------------------------
+    int mnMachineId;
+    //---------------------------------------------------------------------------
+
     // Vocabulary used for relocalization.
     ORBVocabulary* mpORBvocabulary;
 

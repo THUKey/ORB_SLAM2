@@ -39,6 +39,30 @@ class Frame;
 class MapPoint
 {
 public:
+     //for Sharing Map
+     //---------------------------------------------------------------------
+    void SetWorldPosInSharedMap(const cv::Mat &Pos, const int MachineId);
+    cv::Mat GetWorldPosInSharedMap(const int MachineId);
+    KeyFrame* GetReferenceKeyFrameInSharedMap();
+
+    std::map<KeyFrame*,size_t> GetObservationsInSharedMap();
+    int ObservationsInSharedMap();
+    void AddObservationInSharedMap(KeyFrame* pKF,size_t idx);
+    void EraseObservationInSharedMap(KeyFrame* pKF);
+
+    int GetIndexInKeyFrameInSharedMap(KeyFrame* pKF);
+    bool IsInKeyFrameInSharedMap(KeyFrame* pKF);
+
+    void SetBadFlagInSharedMap();
+    bool isBadInSharedMap();
+
+    void ReplaceInSharedMap(MapPoint* pMP);
+    MapPoint* GetReplacedInSharedMap();
+
+
+     //---------------------------------------------------------------------
+
+
     MapPoint(const cv::Mat &Pos, KeyFrame* pRefKF, Map* pMap);
     MapPoint(const cv::Mat &Pos,  Map* pMap, Frame* pFrame, const int &idxF);
 
@@ -60,7 +84,7 @@ public:
     void SetBadFlag();
     bool isBad();
 
-    void Replace(MapPoint* pMP);    
+    void Replace(MapPoint* pMP);
     MapPoint* GetReplaced();
 
     void IncreaseVisible(int n=1);
@@ -82,6 +106,12 @@ public:
     int PredictScale(const float &currentDist, Frame* pF);
 
 public:
+     //for Sharing Map
+     //---------------------------------------------------------------------
+    int nObsInSharedMap;
+
+     //---------------------------------------------------------------------
+
     long unsigned int mnId;
     static long unsigned int nNextId;
     long int mnFirstKFid;
@@ -105,14 +135,33 @@ public:
     // Variables used by loop closing
     long unsigned int mnLoopPointForKF;
     long unsigned int mnCorrectedByKF;
-    long unsigned int mnCorrectedReference;    
+    long unsigned int mnCorrectedReference;
     cv::Mat mPosGBA;
     long unsigned int mnBAGlobalForKF;
 
 
     static std::mutex mGlobalMutex;
 
-protected:    
+protected:
+     //for Sharing Map
+     //---------------------------------------------------------------------
+     // Keyframes observing the point and associated index in keyframe
+     std::map<KeyFrame*,size_t> mObservationsInSharedMap;
+
+     //Pose in each Machine World
+     std::map<size_t,cv::Mat> mWorldPosInSharedMap;
+
+     Map* mpSharedMap;
+     MapPoint* mpReplacedInSharedMap;
+     KeyFrame* mpRefKFInSharedMap;
+     bool mbBadInSharedMap;
+     // Best descriptor (in SharedMap) to fast matching
+     cv::Mat mDescriptorInSharedMap;
+
+
+     //---------------------------------------------------------------------
+
+
 
      // Position in absolute coordinates
      cv::Mat mWorldPos;

@@ -48,9 +48,30 @@ public:
     void InformNewBigChange();
     int GetLastBigChangeIdx();
 
+    //----------------------------------------------------------------------
+    //for Sharing Map
+    void AddKeyFrameShared(KeyFrame* pKFS);
+    void AddMapPointShared(MapPoint* pMPS);
+    void EraseMapPointShared(MapPoint* pMPS);
+    void EraseKeyFrameShared(KeyFrame* pKFS);
+    // void SetReferenceMapPoints(const std::vector<MapPoint*> &vpMPs);
+    // void InformNewBigChange();
+    // int GetLastBigChangeIdx();
+    //----------------------------------------------------------------------
+
+
+
     std::vector<KeyFrame*> GetAllKeyFrames();
     std::vector<MapPoint*> GetAllMapPoints();
     std::vector<MapPoint*> GetReferenceMapPoints();
+
+    //----------------------------------------------------------------------
+    //for Sharing Map
+    std::vector<KeyFrame*> GetAllKeyFramesShared();
+    std::vector<MapPoint*> GetAllMapPointsShared();
+    // std::vector<MapPoint*> GetReferenceMapPoints();
+    //----------------------------------------------------------------------
+
 
     long unsigned int MapPointsInMap();
     long unsigned  KeyFramesInMap();
@@ -58,6 +79,13 @@ public:
     long unsigned int GetMaxKFid();
 
     void clear();
+
+    //----------------------------------------------------------------------
+    //for Sharing Map
+    long unsigned int MapPointsSharedInMap();
+    long unsigned  KeyFramesSharedInMap();
+    void clearSharedMap();
+    //----------------------------------------------------------------------
 
     vector<KeyFrame*> mvpKeyFrameOrigins;
 
@@ -69,6 +97,12 @@ public:
 protected:
     std::set<MapPoint*> mspMapPoints;
     std::set<KeyFrame*> mspKeyFrames;
+
+    //----------------------------------------------------------------------
+    //for Sharing Map
+    std::set<MapPoint*> mspMapPointsShared;
+    std::set<KeyFrame*> mspKeyFramesShared;
+    //----------------------------------------------------------------------
 
     std::vector<MapPoint*> mvpReferenceMapPoints;
 

@@ -39,11 +39,18 @@ class Map;
 class MapPoint;
 class Frame;
 class KeyFrameDatabase;
+class KeyFrameShare;
 
 class KeyFrame
 {
 public:
     KeyFrame(Frame &F, Map* pMap, KeyFrameDatabase* pKFDB);
+    //for Sharing Map
+    //-------------------------------------------------------------------------
+    /*
+    KeyFrame(KeyFrameShare &KFS, Map* pMap, KeyFrameDatabase* pKFDB, int MachineId);
+    */
+    //-------------------------------------------------------------------------
 
     // Pose functions
     void SetPose(const cv::Mat &Tcw);
@@ -119,6 +126,12 @@ public:
 
     // The following variables are accesed from only 1 thread or never change (no mutex needed).
 public:
+    //for Sharing Map
+    //-------------------------------------------------------------------------
+    //belong to which machine
+    const int mnMachineId;
+
+    //-------------------------------------------------------------------------
 
     static long unsigned int nNextId;
     long unsigned int mnId;
@@ -222,7 +235,7 @@ protected:
     // Bad flags
     bool mbNotErase;
     bool mbToBeErased;
-    bool mbBad;    
+    bool mbBad;
 
     float mHalfBaseline; // Only for visualization
 

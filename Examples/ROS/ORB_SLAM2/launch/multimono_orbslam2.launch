@@ -1,0 +1,11 @@
+
+<launch>
+  <!--
+  <node name="camera" pkg="cv_camera" type="cv_camera_node" output="screen" >
+    <param name="device_id" value="0"/>
+    <remap from="/cv_camera/image_raw" to="/camera/image_raw" />
+  </node>
+-->
+  <node name="multiMono" pkg="ORB_SLAM2" type="multiMono" output="screen" args="/home/key/workspace/ORB_SLAM2/ORB_SLAM2/Vocabulary/ORBvoc.txt   /home/key/workspace/ORB_SLAM2/ORB_SLAM2/Examples/Monocular/TUM1.yaml" >
+  </node>
+</launch>

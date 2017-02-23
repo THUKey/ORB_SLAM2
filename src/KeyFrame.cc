@@ -41,7 +41,7 @@ KeyFrame::KeyFrame(Frame &F, Map *pMap, KeyFrameDatabase *pKFDB):
     mvInvLevelSigma2(F.mvInvLevelSigma2), mnMinX(F.mnMinX), mnMinY(F.mnMinY), mnMaxX(F.mnMaxX),
     mnMaxY(F.mnMaxY), mK(F.mK), mvpMapPoints(F.mvpMapPoints), mpKeyFrameDB(pKFDB),
     mpORBvocabulary(F.mpORBvocabulary), mbFirstConnection(true), mpParent(NULL), mbNotErase(false),
-    mbToBeErased(false), mbBad(false), mHalfBaseline(F.mb/2), mpMap(pMap)
+    mbToBeErased(false), mbBad(false), mHalfBaseline(F.mb/2), mpMap(pMap),mnMachineId(0)
 {
     mnId=nNextId++;
 
@@ -53,8 +53,40 @@ KeyFrame::KeyFrame(Frame &F, Map *pMap, KeyFrameDatabase *pKFDB):
             mGrid[i][j] = F.mGrid[i][j];
     }
 
-    SetPose(F.mTcw);    
+    SetPose(F.mTcw);
 }
+
+/*
+KeyFrame::KeyFrame(KeyFrameShare &KFS, Map *pMap, KeyFrameDatabase *pKFDB):
+    mnFrameId(KFS.mnId),  mTimeStamp(KFS.mTimeStamp), mnGridCols(FRAME_GRID_COLS), mnGridRows(FRAME_GRID_ROWS),
+    mfGridElementWidthInv(KFS.mfGridElementWidthInv), mfGridElementHeightInv(KFS.mfGridElementHeightInv),
+    mnTrackReferenceForFrame(0), mnFuseTargetForKF(0), mnBALocalForKF(0), mnBAFixedForKF(0),
+    mnLoopQuery(0), mnLoopWords(0), mnRelocQuery(0), mnRelocWords(0), mnBAGlobalForKF(0),
+    fx(KFS.fx), fy(KFS.fy), cx(KFS.cx), cy(KFS.cy), invfx(KFS.invfx), invfy(KFS.invfy),
+    mbf(KFS.mbf), mb(KFS.mb), mThDepth(KFS.mThDepth), N(KFS.N), mvKeys(KFS.mvKeys), mvKeysUn(KFS.mvKeysUn),
+    mvuRight(KFS.mvuRight), mvDepth(KFS.mvDepth), mDescriptors(KFS.mDescriptors.clone()),
+    mBowVec(KFS.mBowVec), mFeatVec(KFS.mFeatVec), mnScaleLevels(KFS.mnScaleLevels), mfScaleFactor(KFS.mfScaleFactor),
+    mfLogScaleFactor(KFS.mfLogScaleFactor), mvScaleFactors(KFS.mvScaleFactors), mvLevelSigma2(KFS.mvLevelSigma2),
+    mvInvLevelSigma2(KFS.mvInvLevelSigma2), mnMinX(KFS.mnMinX), mnMinY(KFS.mnMinY), mnMaxX(KFS.mnMaxX),
+    mnMaxY(KFS.mnMaxY), mK(KFS.mK), mvpMapPoints(KFS.mvpMapPoints), mpKeyFrameDB(pKFDB),
+    mpORBvocabulary(KFS.mpORBvocabulary), mbFirstConnection(true), mpParent(NULL), mbNotErase(false),
+    mbToBeErased(false), mbBad(false), mHalfBaseline(KFS.mb/2), mpMap(pMap), mnMachineId(KFS.mnMachineId)
+{
+    mnId=nNextId++;
+
+
+    mGrid.resize(mnGridCols);
+    for(int i=0; i<mnGridCols;i++)
+    {
+        mGrid[i].resize(mnGridRows);
+        for(int j=0; j<mnGridRows; j++)
+            mGrid[i][j] = KFS.mGrid[i][j];
+    }
+
+    SetPose(KFS.mTcw);
+}
+*/
+
 
 void KeyFrame::ComputeBoW()
 {
@@ -153,7 +185,7 @@ void KeyFrame::UpdateBestCovisibles()
     }
 
     mvpOrderedConnectedKeyFrames = vector<KeyFrame*>(lKFs.begin(),lKFs.end());
-    mvOrderedWeights = vector<int>(lWs.begin(), lWs.end());    
+    mvOrderedWeights = vector<int>(lWs.begin(), lWs.end());
 }
 
 set<KeyFrame*> KeyFrame::GetConnectedKeyFrames()
@@ -451,7 +483,7 @@ void KeyFrame::SetErase()
 }
 
 void KeyFrame::SetBadFlag()
-{   
+{
     {
         unique_lock<mutex> lock(mMutexConnections);
         if(mnId==0)

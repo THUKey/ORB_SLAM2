@@ -82,6 +82,11 @@ public:
     void InformOnlyTracking(const bool &flag);
 
 
+//for Sharing Map
+//---------------------------------------------------------------------------------
+    bool SharedFrameLocalization();
+//---------------------------------------------------------------------------------
+
 public:
 
     // Tracking states

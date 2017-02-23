@@ -70,6 +70,166 @@ MapPoint::MapPoint(const cv::Mat &Pos, Map* pMap, Frame* pFrame, const int &idxF
     mnId=nNextId++;
 }
 
+
+//for Sharing Map
+//---------------------------------------------------------------------
+
+void MapPoint::SetWorldPosInSharedMap(const cv::Mat &Pos, const int MachineId)
+{
+    unique_lock<mutex> lock2(mGlobalMutex);
+    unique_lock<mutex> lock(mMutexPos);
+    Pos.copyTo(mWorldPosInSharedMap[MachineId]);
+}
+
+cv::Mat MapPoint::GetWorldPosInSharedMap(const int MachineId)
+{
+    unique_lock<mutex> lock(mMutexPos);
+    return mWorldPosInSharedMap[MachineId].clone();
+}
+
+KeyFrame* MapPoint::GetReferenceKeyFrameInSharedMap()
+{
+    unique_lock<mutex> lock(mMutexFeatures);
+    return mpRefKFInSharedMap;
+}
+
+std::map<KeyFrame*,size_t> MapPoint::GetObservationsInSharedMap()
+{
+    unique_lock<mutex> lock(mMutexFeatures);
+    return mObservationsInSharedMap;
+}
+
+int MapPoint::ObservationsInSharedMap()
+{
+    unique_lock<mutex> lock(mMutexFeatures);
+    return nObsInSharedMap;
+}
+
+void MapPoint::AddObservationInSharedMap(KeyFrame* pKF,size_t idx)
+{
+    unique_lock<mutex> lock(mMutexFeatures);
+    if(mObservationsInSharedMap.count(pKF))
+        return;
+    mObservationsInSharedMap[pKF]=idx;
+
+    if(pKF->mvuRight[idx]>=0)
+        nObsInSharedMap+=2;
+    else
+        nObsInSharedMap++;
+}
+void MapPoint::EraseObservationInSharedMap(KeyFrame* pKF)
+{
+    bool bBadInSharedMap=false;
+    {
+        unique_lock<mutex> lock(mMutexFeatures);
+        if(mObservationsInSharedMap.count(pKF))
+        {
+            int idx = mObservationsInSharedMap[pKF];
+            if(pKF->mvuRight[idx]>=0)
+                nObsInSharedMap-=2;
+            else
+                nObsInSharedMap--;
+
+            mObservationsInSharedMap.erase(pKF);
+
+            if(mpRefKFInSharedMap==pKF)
+                mpRefKFInSharedMap=mObservationsInSharedMap.begin()->first;
+
+            // If only 2 observations or less, discard point
+            if(nObsInSharedMap<=2)
+                bBadInSharedMap=true;
+        }
+    }
+
+    if(bBadInSharedMap)
+        SetBadFlagInSharedMap();
+}
+
+
+int MapPoint::GetIndexInKeyFrameInSharedMap(KeyFrame *pKF)
+{
+    unique_lock<mutex> lock(mMutexFeatures);
+    if(mObservationsInSharedMap.count(pKF))
+        return mObservationsInSharedMap[pKF];
+    else
+        return -1;
+}
+
+bool MapPoint::IsInKeyFrameInSharedMap(KeyFrame *pKF)
+{
+    unique_lock<mutex> lock(mMutexFeatures);
+    return (mObservationsInSharedMap.count(pKF));
+}
+
+bool MapPoint::isBadInSharedMap()
+{
+    unique_lock<mutex> lock(mMutexFeatures);
+    unique_lock<mutex> lock2(mMutexPos);
+    return mbBadInSharedMap;
+}
+
+void MapPoint::SetBadFlagInSharedMap()
+{
+    map<KeyFrame*,size_t> obs;
+    {
+        unique_lock<mutex> lock1(mMutexFeatures);
+        unique_lock<mutex> lock2(mMutexPos);
+        mbBadInSharedMap=true;
+        obs = mObservationsInSharedMap;
+        mObservationsInSharedMap.clear();
+    }
+    for(map<KeyFrame*,size_t>::iterator mit=obs.begin(), mend=obs.end(); mit!=mend; mit++)
+    {
+        KeyFrame* pKF = mit->first;
+        pKF->EraseMapPointMatch(mit->second);
+    }
+
+    mpSharedMap->EraseMapPoint(this);
+}
+void MapPoint::ReplaceInSharedMap(MapPoint* pMP)
+{
+    if(pMP->mnId==this->mnId)
+        return;
+
+    int nvisible, nfound;
+    map<KeyFrame*,size_t> obs;
+    {
+        unique_lock<mutex> lock1(mMutexFeatures);
+        unique_lock<mutex> lock2(mMutexPos);
+        obs=mObservationsInSharedMap;
+        mObservationsInSharedMap.clear();
+        mbBadInSharedMap=true;
+        // nvisible = mnVisible;
+        // nfound = mnFound;
+        // mpReplaced = pMP;
+    }
+
+    for(map<KeyFrame*,size_t>::iterator mit=obs.begin(), mend=obs.end(); mit!=mend; mit++)
+    {
+        // Replace measurement in keyframe
+        KeyFrame* pKF = mit->first;
+
+        if(!pMP->IsInKeyFrame(pKF))
+        {
+            pKF->ReplaceMapPointMatch(mit->second, pMP);
+            pMP->AddObservation(pKF,mit->second);
+        }
+        else
+        {
+            pKF->EraseMapPointMatch(mit->second);
+        }
+    }
+    pMP->IncreaseFound(nfound);
+    pMP->IncreaseVisible(nvisible);
+    pMP->ComputeDistinctiveDescriptors();
+
+    mpMap->EraseMapPoint(this);
+}
+
+
+
+//---------------------------------------------------------------------
+
 void MapPoint::SetWorldPos(const cv::Mat &Pos)
 {
     unique_lock<mutex> lock2(mGlobalMutex);

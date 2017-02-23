@@ -78,7 +78,7 @@ public:
     cv::Mat TrackMonocular(const cv::Mat &im, const double &timestamp);
 
     //assistant camera
-    cv::Mat TrackMonocular_a(const cv::Mat &im, const double &timestamp);
+    cv::Mat TrackMonocular_a(const cv::Mat &im, const double &timestamp, ORB_SLAM2::Frame* &CurrentFramePtr);
 
     // This stops local mapping thread (map building) and performs only camera tracking.
     void ActivateLocalizationMode();

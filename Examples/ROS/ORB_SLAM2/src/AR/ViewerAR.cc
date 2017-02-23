@@ -18,6 +18,8 @@
 * along with ORB-SLAM2. If not, see <http://www.gnu.org/licenses/>.
 */
 
+#define _DEBUG_
+
 #include "ViewerAR.h"
 
 #include <opencv2/highgui/highgui.hpp>
@@ -56,6 +58,10 @@ ViewerAR::ViewerAR(){}
 
 void ViewerAR::Run()
 {
+    #ifdef _DEBUG_
+    std::cout<<"ViewerAR Run"<<std::endl;
+    #endif
+
     int w,h,wui;
 
     cv::Mat im, Tcw;
@@ -79,6 +85,9 @@ void ViewerAR::Run()
     wui=200;
 
     pangolin::CreateWindowAndBind("Viewer",w+wui,h);
+    #ifdef _DEBUG_
+    std::cout<<"AR CreateWindowAndBind(Viewer)"<<std::endl;
+    #endif
 
     glEnable(GL_DEPTH_TEST);
     glEnable (GL_BLEND);
@@ -106,6 +115,8 @@ void ViewerAR::Run()
     pangolin::OpenGlMatrixSpec P = pangolin::ProjectionMatrixRDF_TopLeft(w,h,fx,fy,cx,cy,0.001,1000);
 
     vector<Plane*> vpPlane;
+
+    std::cout<<"viewerAR start loop"<<std::endl;
 
     while(1)
     {

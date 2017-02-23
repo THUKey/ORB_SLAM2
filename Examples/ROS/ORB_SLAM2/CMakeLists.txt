@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 2.4.6)
 include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
 
 rosbuild_init()
+rosbuild_genmsg()
 
 IF(NOT ROS_BUILD_TYPE)
   SET(ROS_BUILD_TYPE Release)
@@ -41,6 +42,15 @@ endif()
 find_package(Eigen3 3.1.0 REQUIRED)
 find_package(Pangolin REQUIRED)
 
+
+#find_package(catkin REQUIRED COMPONENTS std_msgs message_generation roscpp)
+#find_package(std_msgs message_generation roscpp)
+
+#add_message_files(DIRECTORY msg FILES bow.msg floatVector.msg intVector.msg descriptor.msg frame.msg point2D.msg feature.msg)
+#generate_messages(DEPENDENCIES std_msgs)
+#catkin_package(CATKIN_DEPENDS message_runtime std_msgs)
+
+
 include_directories(
 ${PROJECT_SOURCE_DIR}
 ${PROJECT_SOURCE_DIR}/../../../
@@ -48,8 +58,8 @@ ${PROJECT_SOURCE_DIR}/../../../include
 ${Pangolin_INCLUDE_DIRS}
 )
 
-set(LIBS 
-${OpenCV_LIBS} 
+set(LIBS
+${OpenCV_LIBS}
 ${EIGEN3_LIBS}
 ${Pangolin_LIBRARIES}
 ${PROJECT_SOURCE_DIR}/../../../Thirdparty/DBoW2/lib/libDBoW2.so
@@ -57,14 +67,24 @@ ${PROJECT_SOURCE_DIR}/../../../Thirdparty/g2o/lib/libg2o.so
 ${PROJECT_SOURCE_DIR}/../../../lib/libORB_SLAM2.so
 )
 
-# Node for monocular camera
-rosbuild_add_executable(Mono
-src/ros_mono.cc
+# Node for multi_monocular camera
+rosbuild_add_executable(multiMono
+src/ros_multimono.cc
 )
 
-target_link_libraries(Mono
+target_link_libraries(multiMono
 ${LIBS}
 )
+
+
+## Node for monocular camera
+#rosbuild_add_executable(Mono
+#src/ros_mono.cc
+#)
+
+#target_link_libraries(Mono
+#${LIBS}
+#)
 
 # Node for monocular camera (Augmented Reality Demo)
 rosbuild_add_executable(MonoAR
@@ -94,4 +114,3 @@ src/ros_rgbd.cc
 target_link_libraries(RGBD
 ${LIBS}
 )
-

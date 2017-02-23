@@ -9,11 +9,13 @@
   <depend package="roscpp"/>
   <depend package="tf"/>
   <depend package="sensor_msgs"/>
+  <depend package="std_msgs"/>
   <depend package="image_transport"/>
   <depend package="cv_bridge"/>
 
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>message_generation</build_depend>
+  <run_depend>message_runtime</run_depend>
+
 
 </package>
-
-
-

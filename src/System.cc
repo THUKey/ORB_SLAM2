@@ -26,6 +26,9 @@
 #include <pangolin/pangolin.h>
 #include <iomanip>
 
+
+#include "Frame.h"
+
 namespace ORB_SLAM2
 {
 
@@ -290,7 +293,7 @@ cv::Mat System::TrackMonocular(const cv::Mat &im, const double &timestamp)
 }
 
 
-cv::Mat System::TrackMonocular_a(const cv::Mat &im, const double &timestamp)
+cv::Mat System::TrackMonocular_a(const cv::Mat &im, const double &timestamp, ORB_SLAM2::Frame* &CurrentFramePtr)
 {
 
     if(mSensor!=MONOCULAR)
@@ -339,6 +342,8 @@ cv::Mat System::TrackMonocular_a(const cv::Mat &im, const double &timestamp)
     //mTrackingState = mpTracker->mState;
     //mTrackedMapPoints = mpTracker->mCurrentFrame.mvpMapPoints;
     //mTrackedKeyPointsUn = mpTracker->mCurrentFrame.mvKeysUn;
+
+    CurrentFramePtr = &mpTracker_a->mCurrentFrame;
 
     return Tcw;
 }

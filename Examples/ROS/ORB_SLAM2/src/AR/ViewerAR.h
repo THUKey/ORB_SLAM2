@@ -26,6 +26,7 @@
 #include <opencv2/core/core.hpp>
 #include <pangolin/pangolin.h>
 #include <string>
+#include <iostream>
 #include"../../../include/System.h"
 
 namespace ORB_SLAM2
@@ -60,18 +61,21 @@ public:
     ViewerAR();
 
     void SetFPS(const float fps){
+        std::cout<<"AR SetFPS"<<std::endl;
         mFPS = fps;
         mT=1e3/fps;
     }
 
     void SetSLAM(ORB_SLAM2::System* pSystem){
+        std::cout<<"AR SetSLAM"<<std::endl;
         mpSystem = pSystem;
     }
 
-    // Main thread function. 
+    // Main thread function.
     void Run();
 
     void SetCameraCalibration(const float &fx_, const float &fy_, const float &cx_, const float &cy_){
+        std::cout<<"AR SetCameraCalibration"<<std::endl;
         fx = fx_; fy = fy_; cx = cx_; cy = cy_;
     }
 
@@ -116,5 +120,3 @@ private:
 
 
 #endif // VIEWERAR_H
-	
-
