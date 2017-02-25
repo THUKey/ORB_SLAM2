@@ -76,6 +76,8 @@ public:
     // Input images: RGB (CV_8UC3) or grayscale (CV_8U). RGB is converted to grayscale.
     // Returns the camera pose (empty if tracking fails).
     cv::Mat TrackMonocular(const cv::Mat &im, const double &timestamp);
+    //overload the TrackMonocular to get CurrentFramePtr
+    cv::Mat TrackMonocular(const cv::Mat &im, const double &timestamp, ORB_SLAM2::Frame* &CurrentFramePtr);
 
     //assistant camera
     cv::Mat TrackMonocular_a(const cv::Mat &im, const double &timestamp, ORB_SLAM2::Frame* &CurrentFramePtr);
@@ -125,6 +127,10 @@ public:
     std::vector<MapPoint*> GetTrackedMapPoints();
     std::vector<cv::KeyPoint> GetTrackedKeyPointsUn();
 
+    //used to be private
+    Tracking* mpTracker;
+    //assistant tracking thread
+    Tracking* mpTracker_a;
 private:
 
     // Input sensor
@@ -142,9 +148,9 @@ private:
     // Tracker. It receives a frame and computes the associated camera pose.
     // It also decides when to insert a new keyframe, create some new MapPoints and
     // performs relocalization if tracking fails.
-    Tracking* mpTracker;
+    // Tracking* mpTracker;
     //assistant tracking thread
-    Tracking* mpTracker_a;
+    // Tracking* mpTracker_a;
 
     // Local Mapper. It manages the local map and performs local bundle adjustment.
     LocalMapping* mpLocalMapper;

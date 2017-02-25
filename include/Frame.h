@@ -63,11 +63,11 @@ public:
 
         std::cout<< "N:" << N << std::endl << std::endl;
 
-        // std::cout<< "mvKeys:" << mvKeys.size() << std::endl;
-        // std::cout<< "mvKeysRight:" << mvKeysRight.size() << std::endl;
+        std::cout<< "mvKeys:" << mvKeys.size() << std::endl;
+        std::cout<< "mvKeysRight:" << mvKeysRight.size() << std::endl;
         std::cout<< "mvKeysUn:" << mvKeysUn.size() << std::endl;
-        // std::cout<< "mvuRight:" << mvuRight.size() << std::endl;             //-1
-        // std::cout<< "mvDepth:" << mvDepth.size() << std::endl << std::endl;  //-1
+        std::cout<< "mvuRight:" << mvuRight.size() << std::endl;             //-1
+        std::cout<< "mvDepth:" << mvDepth.size() << std::endl << std::endl;  //-1
 
         std::cout<< "mBowVec:" << mBowVec << std::endl;
         // for (size_t i = 0; i < mvuRight.size(); i++) {

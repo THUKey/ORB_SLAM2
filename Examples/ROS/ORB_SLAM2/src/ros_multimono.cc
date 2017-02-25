@@ -58,6 +58,10 @@ public:
 
     void GrabImage_a(const sensor_msgs::ImageConstPtr& msg);
 
+    void insertKeyFrame(const ORB_SLAM2::frame &frame_msg);
+
+    void FrameinfoToFrame(const ORB_SLAM2::frame &frame_msg, ORB_SLAM2::Frame* CurrentFramePtr);
+
     ORB_SLAM2::System* mpSLAM;
 
     ros::Publisher pub_;
@@ -67,26 +71,22 @@ public:
 
 int main(int argc, char **argv)
 {
-    //test
-    cv::Mat C = (cv::Mat_<double>(3,3) << 0, -1, 2, -3, 4, -5, 6, -7, 8);
-    std::cout << "Total matrix:" <<std::endl;
-    std::cout << C << std::endl;
-
-    cv::Mat row = C.rowRange(1,3).clone();
-    std::cout << "Row range:" << std::endl;
-    std::cout << row << std::endl;
-
-    cv::Mat col = C.colRange(1,3).clone();
-    std::cout << "Col range:" << std::endl;
-    std::cout << col << std::endl;
-
-    cv::Mat row1 = C.row(1).clone();
-    std::cout << "Row1:" << std::endl;
-    std::cout << row1 << std::endl;
-
-    cv::Mat col1 = C.col(1).clone();
-    std::cout << "Col1:" << std::endl;
-    std::cout << col1 << std::endl;
+    std::vector<int> v1;
+    for (size_t i = 0; i < 10; i++) {
+        /* code */
+        v1.push_back(i);
+    }
+    for(std::vector<int>::const_iterator vit=v1.begin(), vend=v1.end(); vit!=vend; vit++)
+    {
+        std::cout << "v  = " <<*vit<< '\n';
+    }
+    v1.reserve(15);
+    v1[13]=13;
+    for(std::vector<int>::const_iterator vit=v1.begin(), vend=v1.end(); vit!=vend; vit++)
+    {
+        std::cout << "v  = " <<*vit<< '\n';
+    }
+    std::cout << "v[13]  = " <<v1[13]<< '\n';
 
     ros::init(argc, argv, "multiMono");
     ros::start();
@@ -105,8 +105,9 @@ int main(int argc, char **argv)
 
     ros::NodeHandle nodeHandler;
     ros::Subscriber sub = nodeHandler.subscribe("/camera/image_raw", 1, &ImageGrabber::GrabImage,&igb);
+    ros::Subscriber sub_a = nodeHandler.subscribe("/frameinfo", 1, &ImageGrabber::insertKeyFrame,&igb);
     //assistant tracking thread
-    ros::Subscriber sub_a = nodeHandler.subscribe("/camera1/image_raw", 1, &ImageGrabber::GrabImage_a,&igb);
+    //ros::Subscriber sub_a = nodeHandler.subscribe("/camera1/image_raw", 1, &ImageGrabber::GrabImage_a,&igb);
     //publish the assistant tracking frames
     igb.pub_ = nodeHandler.advertise<ORB_SLAM2::floatMat>("framepose",10);
     igb.pub_a_ = nodeHandler.advertise<ORB_SLAM2::frame>("frameinfo",10);
@@ -154,7 +155,7 @@ void ImageGrabber::GrabImage(const sensor_msgs::ImageConstPtr& msg)
         tcw_msg.floatMat.push_back(v);
         tcw_msg.floatMat.push_back(v);
         // std::cout << "publish the tcw_msg.data = " << Tcw.at<float>(0,0) << std::endl;
-        std::cout << "Tcw = " << Tcw.cols << " x " << Tcw.rows << std::endl;
+        // std::cout << "Tcw = " << Tcw.cols << " x " << Tcw.rows << std::endl;
         pub_.publish(tcw_msg);
     }
 
@@ -181,8 +182,6 @@ void ImageGrabber::GrabImage_a(const sensor_msgs::ImageConstPtr& msg)
     if(Tcw.cols != 0)
     {
 
-        std::cout << "Tcw = " << Tcw << std::endl;
-        std::cout << "mTcw = " << CurrentFramePtr->mTcw << std::endl;
 
         ORB_SLAM2::frame frame_msg;
         frame_msg.mTimeStamp = CurrentFramePtr->mTimeStamp;
@@ -249,5 +248,87 @@ void ImageGrabber::GrabImage_a(const sensor_msgs::ImageConstPtr& msg)
 
         pub_a_.publish(frame_msg);
     }
+
+}
+
+void ImageGrabber::insertKeyFrame(const ORB_SLAM2::frame &frame_msg)
+{
+    std::cout << "get the frame_msg" << '\n';
+    // mpSLAM->mpTracker_a->SetAssistant(false);
+    std::cout << "now the mCurrentFrame is" << '\n';
+    mpSLAM->mpTracker_a->mCurrentFrame.Show();
+    ORB_SLAM2::Frame* CurrentFramePtr = new ORB_SLAM2::Frame(mpSLAM->mpTracker->mCurrentFrame);
+    FrameinfoToFrame(frame_msg,CurrentFramePtr);
+    mpSLAM->mpTracker_a->mCurrentFrame = *CurrentFramePtr;
+    std::cout << "afrer FrameinfoToFrame now the mCurrentFrame is" << '\n';
+    mpSLAM->mpTracker_a->mCurrentFrame.Show();
+    std::cout << "start track sharing" << '\n';
+    mpSLAM->mpTracker_a->TrackForNewFrameFromSharing();
+    std::cout << "finished track sharing" << '\n';
+
+    // mpSLAM->mpTracker_a->SetAssistant(true);
+}
+
+void ImageGrabber::FrameinfoToFrame(const ORB_SLAM2::frame &frame_msg,ORB_SLAM2::Frame* CurrentFramePtr)
+{
+    std::cout << "FrameinfoToFrame" << '\n';
+    CurrentFramePtr->mTimeStamp = frame_msg.mTimeStamp;
+    CurrentFramePtr->N = frame_msg.N;
+
+    // CurrentFramePtr->mvpMapPoints.clear();
+    CurrentFramePtr->mvpMapPoints.reserve(1000000);
+    CurrentFramePtr->mvKeysUn.clear();
+    CurrentFramePtr->mvKeys.clear();
+    CurrentFramePtr->mvuRight.clear();
+    CurrentFramePtr->mvDepth.clear();
+    for(std::vector<ORB_SLAM2::keypoint>::const_iterator vit=frame_msg.mvKeysUn.begin(), vend=frame_msg.mvKeysUn.end(); vit!=vend; vit++)
+    {
+        cv::KeyPoint keypoint;
+        keypoint.pt.x = vit->x;
+        keypoint.pt.y = vit->y;
+        keypoint.angle = vit->angle;
+        keypoint.class_id = vit->class_id;
+        keypoint.octave = vit->octave;
+        keypoint.response = vit->response;
+        keypoint.size = vit->size;
+        CurrentFramePtr->mvKeysUn.push_back(keypoint);
+        CurrentFramePtr->mvKeys.push_back(keypoint);
+        CurrentFramePtr->mvuRight.push_back(-1);
+        CurrentFramePtr->mvDepth.push_back(-1);
+    }
+
+
+    CurrentFramePtr->mBowVec.clear();
+    CurrentFramePtr->mDescriptors = cv::Mat::zeros(frame_msg.N, 32, CV_8UC1);
+    for (int i = 0; i < frame_msg.N; i++) {
+        for (int j = 0; j < 32; j++) {
+            CurrentFramePtr->mDescriptors.at<uchar>(i,j) = frame_msg.mDescriptors[i].descriptor[j];
+        }
+    }
+
+    CurrentFramePtr->mvbOutlier.clear();
+    CurrentFramePtr->mvbOutlier = vector<bool>(frame_msg.N,false);
+    /*
+    for (size_t i = 0; i < frame_msg.mvbOutlier.size(); i++) {
+        if(frame_msg.mvbOutlier[i]) CurrentFramePtr->mvbOutlier.push_back(1);
+        else CurrentFramePtr->mvbOutlier.push_back(0);
+    }
+    */
+
+    std::cout << "start to convert cv::Mat" << '\n';
+    CurrentFramePtr->SetPose(cv::Mat::eye(4,4,CV_32F));
+    std::cout << "Mat size: " << CurrentFramePtr->mTcw.rows <<" x " <<CurrentFramePtr->mTcw.cols << std::endl;
+    for (int i = 0; i < CurrentFramePtr->mTcw.rows; i++) {
+        for (int j = 0; j < CurrentFramePtr->mTcw.cols; j++) {
+            // std::cout << "mTcw.at<float>("<<i<<","<<j<<"):"<<frame_msg.mTcw[i].float32Vector[j] << '\n';
+            CurrentFramePtr->mTcw.at<float>(i,j) = frame_msg.mTcw[i].float32Vector[j];
+        }
+    }
+    std::cout << " converted cv::Mat" << '\n';
+
+
+
+    CurrentFramePtr->mnId = CurrentFramePtr->nNextId;
+    CurrentFramePtr->nNextId ++;
 
 }

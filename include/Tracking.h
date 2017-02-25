@@ -59,7 +59,7 @@ public:
 
     //When the tracking is not the mainThread,just Run...
     void Run();
-    void SetAssistant();
+    void SetAssistant(bool isAss = true);
     bool CheckAssistant();
 
     // Preprocess the input and call Track(). Extract features and performs stereo matching.
@@ -85,6 +85,7 @@ public:
 //for Sharing Map
 //---------------------------------------------------------------------------------
     bool SharedFrameLocalization();
+    void TrackForNewFrameFromSharing();
 //---------------------------------------------------------------------------------
 
 public:

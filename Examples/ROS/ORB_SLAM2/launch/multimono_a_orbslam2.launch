@@ -6,6 +6,6 @@
     <remap from="/cv_camera/image_raw" to="/camera/image_raw" />
   </node>
 -->
-  <node name="multiMono" pkg="ORB_SLAM2" type="multiMono" output="screen" args="/home/wangkuan/workspace/ORB_SLAM2/ORB_SLAM2/Vocabulary/ORBvoc.txt   /home/wangkuan/workspace/ORB_SLAM2/ORB_SLAM2/Examples/Monocular/TUM1.yaml" >
+  <node name="multiMono_a" pkg="ORB_SLAM2" type="multiMono_a" output="screen" args="/home/wangkuan/workspace/ORB_SLAM2/ORB_SLAM2/Vocabulary/ORBvoc.txt   /home/wangkuan/workspace/ORB_SLAM2/ORB_SLAM2/Examples/Monocular/TUM1.yaml" >
   </node>
 </launch>

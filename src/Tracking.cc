@@ -301,7 +301,11 @@ cv::Mat Tracking::GrabImageMonocular_a(const cv::Mat &im, const double &timestam
     return mCurrentFrame.mTcw.clone();
 }
 
-
+void Tracking::TrackForNewFrameFromSharing()
+{
+    // eTrackingState mStateTemp = mStateTemp;
+    Track();
+}
 
 void Tracking::Track()
 {
@@ -610,21 +614,25 @@ void Tracking::StereoInitialization()
 
 void Tracking::MonocularInitialization_a()
 {
+    std::cout << "start monocular initialization" << '\n';
     if(mCurrentFrame.N>500)
     {
         // Set Frame pose to the origin
         mCurrentFrame.SetPose(cv::Mat::eye(4,4,CV_32F));
 
+        std::cout << "start Relocalization" << '\n';
         if(!Relocalization())
         {
             std::cout << "Relocalization failed" << std::endl;
             return;
         }
         // Create KeyFrame
+        std::cout << "new KeyFrame pKFini" << '\n';
         KeyFrame* pKFini = new KeyFrame(mCurrentFrame,mpMap,mpKeyFrameDB);
     //    UpdateLocalKeyFrames();
     //    pKFini->ComputeBoW();
         // Insert KeyFrame in the map
+        std::cout << "AddKeyFrame" << '\n';
         mpMap->AddKeyFrame(pKFini);
 
         // Create MapPoints and asscoiate to KeyFrame
@@ -1464,10 +1472,12 @@ bool Tracking::Relocalization()
 {
     // Compute Bag of Words Vector
     mCurrentFrame.ComputeBoW();
+    std::cout << "finished ComputeBoW" << '\n';
 
     // Relocalization is performed when tracking is lost
     // Track Lost: Query KeyFrame Database for keyframe candidates for relocalisation
     vector<KeyFrame*> vpCandidateKFs = mpKeyFrameDB->DetectRelocalizationCandidates(&mCurrentFrame);
+    std::cout << "finished DetectRelocalizationCandidates" << '\n';
 
     if(vpCandidateKFs.empty())
         return false;
@@ -1496,6 +1506,7 @@ bool Tracking::Relocalization()
             vbDiscarded[i] = true;
         else
         {
+            std::cout << "nKFs = " << nKFs << "  start SearchByBoW" << i <<'\n';
             int nmatches = matcher.SearchByBoW(pKF,mCurrentFrame,vvpMapPointMatches[i]);
             if(nmatches<15)
             {
@@ -1519,6 +1530,7 @@ bool Tracking::Relocalization()
 
     while(nCandidates>0 && !bMatch)
     {
+        std::cout << "start Ransac Iterations" << '\n';
         for(int i=0; i<nKFs; i++)
         {
             if(vbDiscarded[i])
@@ -1542,6 +1554,7 @@ bool Tracking::Relocalization()
             // If a Camera Pose is computed, optimize
             if(!Tcw.empty())
             {
+                std::cout << " a Camera Pose is computed, optimize" << '\n';
                 Tcw.copyTo(mCurrentFrame.mTcw);
 
                 set<MapPoint*> sFound;
@@ -1552,12 +1565,17 @@ bool Tracking::Relocalization()
                 {
                     if(vbInliers[j])
                     {
+                        std::cout << "insert mvpMapPoints j="<<j<<" np="<<np<< '\n';
                         mCurrentFrame.mvpMapPoints[j]=vvpMapPointMatches[i][j];
                         sFound.insert(vvpMapPointMatches[i][j]);
+                        std::cout << "insert sucessfull" << '\n';
                     }
                     else
+                        std::cout << "NULL mvpMapPoints j="<<j<<" np="<<np<< '\n';
                         mCurrentFrame.mvpMapPoints[j]=NULL;
+                        std::cout << "mvpMapPoints[j] = NULL" << '\n';
                 }
+                std::cout << "testend" << '\n';
 
                 int nGood = Optimizer::PoseOptimization(&mCurrentFrame);
 
@@ -1569,6 +1587,7 @@ bool Tracking::Relocalization()
                         mCurrentFrame.mvpMapPoints[io]=static_cast<MapPoint*>(NULL);
 
                 // If few inliers, search by projection in a coarse window and optimize again
+                std::cout << "now the nGood is" << nGood << '\n';
                 if(nGood<50)
                 {
                     int nadditional =matcher2.SearchByProjection(mCurrentFrame,vpCandidateKFs[i],sFound,10,100);
@@ -1610,6 +1629,7 @@ bool Tracking::Relocalization()
             }
         }
     }
+    std::cout << "finished relocalisation" << '\n';
 
     if(!bMatch)
     {
@@ -1892,9 +1912,9 @@ void Tracking::InformOnlyTracking(const bool &flag)
     mbOnlyTracking = flag;
 }
 
-void Tracking::SetAssistant()
+void Tracking::SetAssistant(bool isAss)
 {
-    bAssistant = true;
+    bAssistant = isAss;
 }
 
 bool Tracking::CheckAssistant()

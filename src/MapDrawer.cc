@@ -17,6 +17,10 @@
 * You should have received a copy of the GNU General Public License
 * along with ORB-SLAM2. If not, see <http://www.gnu.org/licenses/>.
 */
+#define _DEBUG_
+#ifdef  _DEBUG_
+#include <iostream>
+#endif
 
 #include "MapDrawer.h"
 #include "MapPoint.h"
@@ -60,7 +64,12 @@ void MapDrawer::DrawMapPoints()
         if(vpMPs[i]->isBad() || spRefMPs.count(vpMPs[i]))
             continue;
         cv::Mat pos = vpMPs[i]->GetWorldPos();
-        glVertex3f(pos.at<float>(0),pos.at<float>(1),pos.at<float>(2));
+        // std::cout << "vpMPs[" << i << "].mWorldpos:" << pos << '\n';
+        // std::cout << "vpMPs[" << i << "]:pos[0]" << pos.at<float>(0) << '\n';
+        // std::cout << "vpMPs[" << i << "]:pos[1]" << pos.at<float>(1) << '\n';
+        // std::cout << "vpMPs[" << i << "]:pos[2]" << pos.at<float>(2) << '\n';
+        glVertex3f(pos.at<float>(0)+10,pos.at<float>(1)+5,pos.at<float>(2)+2);
+
     }
     glEnd();
 

@@ -71,8 +71,16 @@ ${PROJECT_SOURCE_DIR}/../../../lib/libORB_SLAM2.so
 rosbuild_add_executable(multiMono
 src/ros_multimono.cc
 )
-
 target_link_libraries(multiMono
+${LIBS}
+)
+
+
+# Node for multi_monocular camera
+rosbuild_add_executable(multiMono_a
+src/ros_multimono_a.cc
+)
+target_link_libraries(multiMono_a
 ${LIBS}
 )
 
