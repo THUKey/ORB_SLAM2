@@ -43,6 +43,8 @@ public:
 
     void GrabStereo(const sensor_msgs::ImageConstPtr& msgLeft,const sensor_msgs::ImageConstPtr& msgRight);
 
+    bool getImages(cv::Mat& left_image, cv::Mat& right_image,cv::VideoCapture& cap);
+
     ORB_SLAM2::System* mpSLAM;
     bool do_rectify;
     cv::Mat M1l,M2l,M1r,M2r;
@@ -58,7 +60,7 @@ int main(int argc, char **argv)
         cerr << endl << "Usage: rosrun ORB_SLAM2 Stereo path_to_vocabulary path_to_settings do_rectify" << endl;
         ros::shutdown();
         return 1;
-    }    
+    }
 
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
     ORB_SLAM2::System SLAM(argv[1],argv[2],ORB_SLAM2::System::STEREO,true);
@@ -69,7 +71,7 @@ int main(int argc, char **argv)
 	ss >> boolalpha >> igb.do_rectify;
 
     if(igb.do_rectify)
-    {      
+    {
         // Load settings related to stereo calibration
         cv::FileStorage fsSettings(argv[2], cv::FileStorage::READ);
         if(!fsSettings.isOpened())
@@ -106,6 +108,19 @@ int main(int argc, char **argv)
         cv::initUndistortRectifyMap(K_l,D_l,R_l,P_l.rowRange(0,3).colRange(0,3),cv::Size(cols_l,rows_l),CV_32F,igb.M1l,igb.M2l);
         cv::initUndistortRectifyMap(K_r,D_r,R_r,P_r.rowRange(0,3).colRange(0,3),cv::Size(cols_r,rows_r),CV_32F,igb.M1r,igb.M2r);
     }
+
+    cv::VideoCapture cap(1);
+    cv::Mat left_image;
+    cv::Mat right_image;
+    while (1)
+    {
+        if(igb.getImages(left_image, right_image, cap))
+        {
+            SLAM.TrackStereo(left_image,right_image,ros::Time::now().toSec());
+        }
+    }
+
+
 
     ros::NodeHandle nh;
 
@@ -169,4 +184,28 @@ void ImageGrabber::GrabStereo(const sensor_msgs::ImageConstPtr& msgLeft,const se
 
 }
 
+bool ImageGrabber::getImages(cv::Mat& left_image, cv::Mat& right_image,cv::VideoCapture& cap)
+{
+	cv::Mat raw;
+	if (cap.grab())
+    {
+		cap.retrieve(raw);
+        // std::cout << cap.get(3) <<" x "<< cap.get(4) << std::endl;
+        cap.get(3);
+		// cv::Rect left_rect(0, 0, 640 / 2, 480);
+		cv::Rect left_rect(0, 0, cap.get(3) / 2, cap.get(4));
+		cv::Rect right_rect(cap.get(3) / 2, 0, cap.get(3) / 2, cap.get(4));
 
+        cv::Mat imLeft, imRight;
+		imLeft = raw(left_rect);
+		imRight = raw(right_rect);
+
+        cv::remap(imLeft,left_image,M1l,M2l,cv::INTER_LINEAR);
+        cv::remap(imRight,right_image,M1r,M2r,cv::INTER_LINEAR);
+
+		return true;
+	} else
+    {
+		return false;
+    }
+}

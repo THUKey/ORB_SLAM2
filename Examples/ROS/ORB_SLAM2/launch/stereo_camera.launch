@@ -1,0 +1,14 @@
+<launch>
+  <node name="camera_left" pkg="cv_camera" type="cv_camera_node" output="screen" >
+    <param name="device_id" value="0"/>
+    <param name="cv_cap_prop_frame_width" value="320" />
+    <param name="cv_cap_prop_frame_height" value="240" />
+  </node>
+
+  <node name="camera_right" pkg="cv_camera" type="cv_camera_node" output="screen" >
+    <param name="device_id" value="2"/>
+    <param name="cv_cap_prop_frame_width" value="320" />
+    <param name="cv_cap_prop_frame_height" value="240" />
+  </node>
+
+</launch>
