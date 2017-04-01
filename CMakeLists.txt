@@ -34,7 +34,7 @@ find_package(Pangolin REQUIRED)
 find_package(Boost  1.54.0  	     # Minimum or EXACT version e.g. 1.36.0
   REQUIRED             					# Fail with error if Boost is not found
   COMPONENTS serialization 				# Boost libraries by their canonical name
-  )          
+  )
 
 include_directories(
 ${PROJECT_SOURCE_DIR}

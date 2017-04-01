@@ -18,6 +18,8 @@
 * along with ORB-SLAM2. If not, see <http://www.gnu.org/licenses/>.
 */
 
+// #define _DEBUG_
+
 
 #include "Tracking.h"
 
@@ -267,7 +269,7 @@ cv::Mat Tracking::GrabImageMonocular(const cv::Mat &im, const double &timestamp)
     Track();
 
     /* Do Pose calculation */
-    if(mState==OK && !mCurrentFrame.mTcw.empty() && mCurrentFrame.mpReferenceKF)    
+    if(mState==OK && !mCurrentFrame.mTcw.empty() && mCurrentFrame.mpReferenceKF)
     {
 
         vector<KeyFrame*> vpKFs = mpMap->GetAllKeyFrames();
@@ -287,17 +289,20 @@ cv::Mat Tracking::GrabImageMonocular(const cv::Mat &im, const double &timestamp)
             Trw = Trw*pKF->mTcp;
             pKF = pKF->GetParent();
         }
-        Trw = Trw*pKF->GetPose()*Two; 
+        Trw = Trw*pKF->GetPose()*Two;
         cv::Mat Tcr = mlRelativeFramePoses.back();
         cv::Mat Tcw = Tcr*Trw;
         return Tcw.clone();
     }
-    else 
+    else
         return mCurrentFrame.mTcw.clone();
 }
 
 void Tracking::Track()
 {
+#ifdef _DEBUG_
+    std::cout << "start Track" << '\n';
+#endif
     if(mState==NO_IMAGES_YET)
     {
         mState = NOT_INITIALIZED;
@@ -328,7 +333,7 @@ void Tracking::Track()
     else
     {
         // System is initialized. Track Frame.
-        bool bOK;
+        bool bOK = false;
 
         // Initial camera pose estimation using motion model or relocalization (if tracking is lost)
         if(!mbOnlyTracking)
@@ -363,7 +368,14 @@ void Tracking::Track()
 
             if(mState==LOST)
             {
-                bOK = Relocalization();
+                if(!bOK && is_preloaded)
+                {
+                    bOK = Relocalization();
+                    MonocularInitialization_a();
+                }else
+                {
+                    bOK = Relocalization();
+                }
             }
             else
             {
@@ -451,6 +463,9 @@ void Tracking::Track()
         else
             mState=LOST;
 
+#ifdef _DEBUG_
+    std::cout << "mpFrameDrawer->Update(this)" << '\n';
+#endif
         // Update drawer
         mpFrameDrawer->Update(this);
 
@@ -522,9 +537,16 @@ void Tracking::Track()
         mLastFrame = Frame(mCurrentFrame);
     }
 
+#ifdef _DEBUG_
+    std::cout << "Store frame pose information to retrieve the complete camera trajectory afterwards." << '\n';
+#endif
+
     // Store frame pose information to retrieve the complete camera trajectory afterwards.
     if(!mCurrentFrame.mTcw.empty() && mCurrentFrame.mpReferenceKF)
     {
+#ifdef _DEBUG_
+    std::cout << "mpReferenceKF->GetPoseInverse()" << '\n';
+#endif
         cv::Mat Tcr = mCurrentFrame.mTcw*mCurrentFrame.mpReferenceKF->GetPoseInverse();
         mlRelativeFramePoses.push_back(Tcr);
         mlpReferences.push_back(mpReferenceKF);
@@ -540,12 +562,12 @@ void Tracking::Track()
         mlbLost.push_back(mState==LOST);
     }
 }
-#if 0
-cv::Mat Tracking::getTransformData()
-{   
-        return mCurrentFrame.mTcw*mCurrentFrame.mpReferenceKF->GetPoseInverse();
-}
-#endif
+// #if 0
+// cv::Mat Tracking::getTransformData()
+// {
+//         return mCurrentFrame.mTcw*mCurrentFrame.mpReferenceKF->GetPoseInverse();
+// }
+// #endif
 
 
 void Tracking::StereoInitialization()
@@ -633,7 +655,7 @@ void Tracking::MonocularInitialization()
         // Try to initialize
         if((int)mCurrentFrame.mvKeys.size()<=100)
         {
-			
+
     		//cout << __FUNCTION__ << "old.The Key Frame-s points are less: " << mCurrentFrame.mvKeys.size() << endl;
             delete mpInitializer;
             mpInitializer = static_cast<Initializer*>(NULL);
@@ -678,6 +700,74 @@ void Tracking::MonocularInitialization()
 
             CreateInitialMapMonocular();
         }
+    }
+}
+
+void Tracking::MonocularInitialization_a()
+{
+    std::cout << "start monocular initialization" << '\n';
+    if(mCurrentFrame.N>100)
+    {
+        // Set Frame pose to the origin
+        mCurrentFrame.SetPose(cv::Mat::eye(4,4,CV_32F));
+
+        std::cout << "start Relocalization" << '\n';
+        if(!Relocalization())
+        {
+            std::cout << "Relocalization failed" << std::endl;
+            return;
+        }
+        // Create KeyFrame
+        std::cout << "new KeyFrame pKFini" << '\n';
+        KeyFrame* pKFini = new KeyFrame(mCurrentFrame,mpMap,mpKeyFrameDB);
+    //    UpdateLocalKeyFrames();
+    //    pKFini->ComputeBoW();
+        // Insert KeyFrame in the map
+        std::cout << "AddKeyFrame" << '\n';
+        mpMap->AddKeyFrame(pKFini);
+
+        // Create MapPoints and asscoiate to KeyFrame
+        for(int i=0; i<mCurrentFrame.N;i++)
+        {
+            float z = mCurrentFrame.mvDepth[i];
+            if(z>0)
+            {
+                cv::Mat x3D = mCurrentFrame.UnprojectStereo(i);
+                MapPoint* pNewMP = new MapPoint(x3D,pKFini,mpMap);
+                pNewMP->AddObservation(pKFini,i);
+                pKFini->AddMapPoint(pNewMP,i);
+                pNewMP->ComputeDistinctiveDescriptors();
+                pNewMP->UpdateNormalAndDepth();
+                mpMap->AddMapPoint(pNewMP);
+
+                mCurrentFrame.mvpMapPoints[i]=pNewMP;
+            }
+        }
+
+        cout << "(assistant)New map created with " << mpMap->MapPointsInMap() << " points" << endl;
+
+        mpLocalMapper->InsertKeyFrame(pKFini);
+
+        mLastFrame = Frame(mCurrentFrame);
+        mnLastKeyFrameId=mCurrentFrame.mnId;
+        mpLastKeyFrame = pKFini;
+
+        mvpLocalKeyFrames.push_back(pKFini);
+        mvpLocalMapPoints=mpMap->GetAllMapPoints();
+        mpReferenceKF = pKFini;
+        mCurrentFrame.mpReferenceKF = pKFini;
+
+        //mpMap->SetReferenceMapPoints(mvpLocalMapPoints);
+
+        //mpMap->mvpKeyFrameOrigins.push_back(pKFini);
+
+        mpMapDrawer->SetCurrentCameraPose(mCurrentFrame.mTcw);
+
+        mState=OK;
+    }
+    else
+    {
+        std::cout << "the mCurrentFrame.N is less than 500" << std::endl;
     }
 }
 
@@ -740,8 +830,8 @@ void Tracking::CreateInitialMapMonocular()
 
     if(medianDepth<0 || pKFcur->TrackedMapPoints(1)<100)
     {
-        cout << "Wrong initialization, reseting... map points(100):" 
-		<< pKFcur->TrackedMapPoints(1) 
+        cout << "Wrong initialization, reseting... map points(100):"
+		<< pKFcur->TrackedMapPoints(1)
 		<< " medianDepth = " << medianDepth << endl;
         Reset();
         return;
@@ -807,6 +897,9 @@ void Tracking::CheckReplacedInLastFrame()
 
 bool Tracking::TrackReferenceKeyFrame()
 {
+#ifdef _DEBUG_
+    std::cout << "start TrackReferenceKeyFrame" << '\n';
+#endif
     // Compute Bag of Words vector
     mCurrentFrame.ComputeBoW();
 
@@ -851,6 +944,9 @@ bool Tracking::TrackReferenceKeyFrame()
 
 void Tracking::UpdateLastFrame()
 {
+#ifdef _DEBUG_
+    std::cout << "start UpdateLastFrame" << '\n';
+#endif
     // Update pose according to reference keyframe
     KeyFrame* pRef = mLastFrame.mpReferenceKF;
     cv::Mat Tlr = mlRelativeFramePoses.back();
@@ -917,6 +1013,9 @@ void Tracking::UpdateLastFrame()
 
 bool Tracking::TrackWithMotionModel()
 {
+#ifdef _DEBUG_
+    std::cout << "start TrackWithMotionModel" << '\n';
+#endif
     ORBmatcher matcher(0.9,true);
 
     // Update last frame pose according to its reference keyframe
@@ -967,7 +1066,7 @@ bool Tracking::TrackWithMotionModel()
             else if(mCurrentFrame.mvpMapPoints[i]->Observations()>0)
                 nmatchesMap++;
         }
-    }    
+    }
 
     if(mbOnlyTracking)
     {
@@ -980,6 +1079,9 @@ bool Tracking::TrackWithMotionModel()
 
 bool Tracking::TrackLocalMap()
 {
+#ifdef _DEBUG_
+    std::cout << "start TrackLocalMap" << '\n';
+#endif
     // We have an estimation of the camera pose and some map points tracked in the frame.
     // We retrieve the local map and try to find matches to points in the local map.
 
@@ -1027,6 +1129,9 @@ bool Tracking::TrackLocalMap()
 
 bool Tracking::NeedNewKeyFrame()
 {
+#ifdef _DEBUG_
+    std::cout << "start NeedNewKeyFrame" << '\n';
+#endif
     if(mbOnlyTracking)
         return false;
 
@@ -1126,6 +1231,9 @@ bool Tracking::NeedNewKeyFrame()
 
 void Tracking::CreateNewKeyFrame()
 {
+#ifdef _DEBUG_
+    std::cout << "start CreateNewKeyFrame" << '\n';
+#endif
     if(!mpLocalMapper->SetNotStop(true))
         return;
 
@@ -1404,13 +1512,20 @@ void Tracking::UpdateLocalKeyFrames()
 
 bool Tracking::Relocalization()
 {
+#ifdef _DEBUG_
+    std::cout << "start Relocalization" << '\n';
+#endif
     // Compute Bag of Words Vector
     mCurrentFrame.ComputeBoW();
     //cout << "Relocalization Initiated" << endl;
 
+#ifdef _DEBUG_
+    std::cout << "start DetectRelocalizationCandidates" << '\n';
+#endif
     // Relocalization is performed when tracking is lost
     // Track Lost: Query KeyFrame Database for keyframe candidates for relocalisation
     vector<KeyFrame*> vpCandidateKFs = mpKeyFrameDB->DetectRelocalizationCandidates(&mCurrentFrame);
+
 
     if(vpCandidateKFs.empty())
         return false;
@@ -1418,6 +1533,9 @@ bool Tracking::Relocalization()
 
     const int nKFs = vpCandidateKFs.size();
 
+#ifdef _DEBUG_
+    std::cout << "Relocalization: candidates =  " << nKFs << '\n';
+#endif
     //cout << "Relocalization: candidates =  " << nKFs  << endl;
 
     // We perform first an ORB matching with each candidate
@@ -1435,7 +1553,7 @@ bool Tracking::Relocalization()
 
     int nCandidates=0;
 
-    
+
 
     for(int i=0; i<nKFs; i++)
     {
@@ -1461,14 +1579,22 @@ bool Tracking::Relocalization()
         }
     }
 
+#ifdef _DEBUG_
+    std::cout << "matcher.SearchByBoW finished and nCandidates = " << nCandidates << '\n';
+#endif
+
 
     // Alternatively perform some iterations of P4P RANSAC
     // Until we found a camera pose supported by enough inliers
     bool bMatch = false;
     ORBmatcher matcher2(0.9,true);
 
+
     while(nCandidates>0 && !bMatch)
     {
+#ifdef _DEBUG_
+    std::cout << "matcher2 start and nCandidates = "<< nCandidates << '\n';
+#endif
 
         for(int i=0; i<nKFs; i++)
         {
@@ -1480,6 +1606,9 @@ bool Tracking::Relocalization()
             int nInliers;
             bool bNoMore;
 
+#ifdef _DEBUG_
+    std::cout << "start PnPsolver iterate " << endl;
+#endif
             PnPsolver* pSolver = vpPnPsolvers[i];
             cv::Mat Tcw = pSolver->iterate(5,bNoMore,vbInliers,nInliers);
 
@@ -1511,6 +1640,9 @@ bool Tracking::Relocalization()
                 }
 
                 int nGood = Optimizer::PoseOptimization(&mCurrentFrame);
+#ifdef _DEBUG_
+    std::cout << "PoseOptimization result : nGood = " << nGood << endl;
+#endif
 
                 if(nGood<10)
                     continue;
@@ -1522,6 +1654,9 @@ bool Tracking::Relocalization()
                 // If few inliers, search by projection in a coarse window and optimize again
                 if(nGood<50)
                 {
+#ifdef _DEBUG_
+    std::cout << "Relocalization:  inliers < 50 : nGood = " << nGood << endl;
+#endif
                     //cout << "Relocalization:  inliers < 50 : nGood = " << nGood << endl;
 
                     int nadditional =matcher2.SearchByProjection(mCurrentFrame,vpCandidateKFs[i],sFound,10,100);
@@ -1566,6 +1701,9 @@ bool Tracking::Relocalization()
 
     if(!bMatch)
     {
+#ifdef _DEBUG_
+    std::cout << "!bMatch" << '\n';
+#endif
         return false;
     }
     else

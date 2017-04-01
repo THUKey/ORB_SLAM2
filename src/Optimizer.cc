@@ -18,6 +18,8 @@
 * along with ORB-SLAM2. If not, see <http://www.gnu.org/licenses/>.
 */
 
+// #define _DEBUG_
+
 #include "Optimizer.h"
 
 #include "Thirdparty/g2o/g2o/core/block_solver.h"
@@ -250,6 +252,9 @@ int Optimizer::PoseOptimization(Frame *pFrame)
 
     int nInitialCorrespondences=0;
 
+#ifdef _DEBUG_
+    std::cout << "PoseOptimization use g2o: Set Frame vertex  " << endl;
+#endif
     // Set Frame vertex
     g2o::VertexSE3Expmap * vSE3 = new g2o::VertexSE3Expmap();
     vSE3->setEstimate(Converter::toSE3Quat(pFrame->mTcw));
@@ -257,6 +262,9 @@ int Optimizer::PoseOptimization(Frame *pFrame)
     vSE3->setFixed(false);
     optimizer.addVertex(vSE3);
 
+#ifdef _DEBUG_
+    std::cout << "PoseOptimization use g2o: Set MapPoint vertices  " << endl;
+#endif
     // Set MapPoint vertices
     const int N = pFrame->N;
 
@@ -273,6 +281,9 @@ int Optimizer::PoseOptimization(Frame *pFrame)
     const float deltaMono = sqrt(5.991);
     const float deltaStereo = sqrt(7.815);
 
+#ifdef _DEBUG_
+    std::cout << "PoseOptimization use g2o: Set Edges  " << endl;
+#endif
 
     {
     unique_lock<mutex> lock(MapPoint::mGlobalMutex);
@@ -364,11 +375,14 @@ int Optimizer::PoseOptimization(Frame *pFrame)
     if(nInitialCorrespondences<3)
         return 0;
 
+#ifdef _DEBUG_
+    std::cout << "PoseOptimization use g2o: Start optimization  " << endl;
+#endif
     // We perform 4 optimizations, after each optimization we classify observation as inlier/outlier
     // At the next optimization, outliers are not included, but at the end they can be classified as inliers again.
     const float chi2Mono[4]={5.991,5.991,5.991,5.991};
     const float chi2Stereo[4]={7.815,7.815,7.815, 7.815};
-    const int its[4]={10,10,10,10};    
+    const int its[4]={10,10,10,10};
 
     int nBad=0;
     for(size_t it=0; it<4; it++)
@@ -393,7 +407,7 @@ int Optimizer::PoseOptimization(Frame *pFrame)
             const float chi2 = e->chi2();
 
             if(chi2>chi2Mono[it])
-            {                
+            {
                 pFrame->mvbOutlier[idx]=true;
                 e->setLevel(1);
                 nBad++;
@@ -428,7 +442,7 @@ int Optimizer::PoseOptimization(Frame *pFrame)
                 nBad++;
             }
             else
-            {                
+            {
                 e->setLevel(0);
                 pFrame->mvbOutlier[idx]=false;
             }
@@ -439,7 +453,7 @@ int Optimizer::PoseOptimization(Frame *pFrame)
 
         if(optimizer.edges().size()<10)
             break;
-    }    
+    }
 
     // Recover optimized pose and return number of inliers
     g2o::VertexSE3Expmap* vSE3_recov = static_cast<g2o::VertexSE3Expmap*>(optimizer.vertex(0));
@@ -451,7 +465,7 @@ int Optimizer::PoseOptimization(Frame *pFrame)
 }
 
 void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap)
-{    
+{
     // Local KeyFrames: First Breath Search from Current Keyframe
     list<KeyFrame*> lLocalKeyFrames;
 
@@ -495,7 +509,7 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
             KeyFrame* pKFi = mit->first;
 
             if(pKFi->mnBALocalForKF!=pKF->mnId && pKFi->mnBAFixedForKF!=pKF->mnId)
-            {                
+            {
                 pKFi->mnBAFixedForKF=pKF->mnId;
                 if(!pKFi->isBad())
                     lFixedCameras.push_back(pKFi);
@@ -587,7 +601,7 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
             KeyFrame* pKFi = mit->first;
 
             if(!pKFi->isBad())
-            {                
+            {
                 const cv::KeyPoint &kpUn = pKFi->mvKeysUn[mit->second];
 
                 // Monocular observation
@@ -711,7 +725,7 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
     vector<pair<KeyFrame*,MapPoint*> > vToErase;
     vToErase.reserve(vpEdgesMono.size()+vpEdgesStereo.size());
 
-    // Check inlier observations       
+    // Check inlier observations
     for(size_t i=0, iend=vpEdgesMono.size(); i<iend;i++)
     {
         g2o::EdgeSE3ProjectXYZ* e = vpEdgesMono[i];
@@ -922,7 +936,7 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
 
             e->information() = matLambda;
             //cout << "OptimizeEssentialGraph. nIDj = "<< nIDj << "nIDi =" << nIDi << endl;
-           
+
             optimizer.addEdge(e);
         }
 
@@ -965,7 +979,7 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
             {
 
                 if(!pKFn->isBad() && pKFn->mnId<pKF->mnId)
-                {                 
+                {
 
                     if(sInsertedEdges.count(make_pair(min(pKF->mnId,pKFn->mnId),max(pKF->mnId,pKFn->mnId))))
                         continue;
@@ -978,18 +992,18 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
                         Snw = itn->second;
                     else
                         Snw = vScw[pKFn->mnId];
-                  
+
 
                     g2o::Sim3 Sni = Snw * Swi;
 
                     g2o::EdgeSim3* en = new g2o::EdgeSim3();
-                    
+
 
                     en->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(pKFn->mnId)));
                     en->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(nIDi)));
                     en->setMeasurement(Sni);
                     en->information() = matLambda;
-                  
+
 
                     optimizer.addEdge(en);
                 }
@@ -1084,7 +1098,7 @@ int Optimizer::OptimizeSim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> &
     const cv::Mat t2w = pKF2->GetTranslation();
 
     // Set Sim3 vertex
-    g2o::VertexSim3Expmap * vSim3 = new g2o::VertexSim3Expmap();    
+    g2o::VertexSim3Expmap * vSim3 = new g2o::VertexSim3Expmap();
     vSim3->_fix_scale=bFixScale;
     vSim3->setEstimate(g2oS12);
     vSim3->setId(0);

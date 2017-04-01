@@ -72,7 +72,7 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     else
         bVocLoad = mpVocabulary->loadFromBinaryFile(strVocFile);
 
-    
+
     //bool bVocLoad = mpVocabulary->loadFromTextFile(strVocFile);
     if(!bVocLoad)
     {
@@ -92,10 +92,10 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
 
 	if (bReuse)
 	{
-		LoadMap("Slam_Map.bin");
-        
+		LoadMap("Slam_latest_Map.bin");
+
         //mpKeyFrameDatabase->set_vocab(mpVocabulary);
-       
+
         vector<ORB_SLAM2::KeyFrame*> vpKFs = mpMap->GetAllKeyFrames();
         for (vector<ORB_SLAM2::KeyFrame*>::iterator it = vpKFs.begin(); it != vpKFs.end(); ++it) {
             (*it)->SetKeyFrameDatabase(mpKeyFrameDatabase);
@@ -121,7 +121,7 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
         for (vector<ORB_SLAM2::KeyFrame*>::iterator it = vpKFs.begin(); it != vpKFs.end(); ++it) {
             (*it)->UpdateConnections();
         }
-       
+
 
 	}
 	cout << endl << mpMap <<" : is the created map address" << endl;
@@ -168,7 +168,7 @@ cv::Mat System::TrackStereo(const cv::Mat &imLeft, const cv::Mat &imRight, const
     {
         cerr << "ERROR: you called TrackStereo but input sensor was not set to STEREO." << endl;
         exit(-1);
-    }   
+    }
 
     // Check mode change
     {
@@ -213,7 +213,7 @@ cv::Mat System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap, const doub
     {
         cerr << "ERROR: you called TrackRGBD but input sensor was not set to RGBD." << endl;
         exit(-1);
-    }    
+    }
 
     // Check mode change
     {
@@ -339,11 +339,11 @@ void System::LoadMap(const string &filename)
     {
         std::ifstream is(filename);
 
-       
+
         boost::archive::binary_iarchive ia(is, boost::archive::no_header);
         //ia >> mpKeyFrameDatabase;
         ia >> mpMap;
-       
+
     }
 
     cout << endl << filename <<" : Map Loaded!" << endl;
@@ -355,7 +355,7 @@ void System::SaveMap(const string &filename)
 {
     std::ofstream os(filename);
     {
-        ::boost::archive::binary_oarchive oa(os, ::boost::archive::no_header);
+        boost::archive::binary_oarchive oa(os, boost::archive::no_header);
         //oa << mpKeyFrameDatabase;
         oa << mpMap;
     }

@@ -63,8 +63,8 @@ void ImageGrabber::PublishPose(cv::Mat Tcw)
         cv::Mat twc = -Rwc*Tcw.rowRange(0,3).col(3);
 
         vector<float> q = ORB_SLAM2::Converter::toQuaternion(Rwc);
-        
-    
+
+
         /*
             cv::Mat Rwc = Tcw.rowRange(0,3).colRange(0,3).t();
             cv::Mat twc = -Rwc*Tcw.rowRange(0,3).col(3);
@@ -101,10 +101,10 @@ int main(int argc, char **argv)
 	bool bReuseMap = false;
     if(argc < 4)
     {
-        cerr << endl << "Usage: rosrun ORB_SLAM2 Mono path_to_vocabulary path_to_settings" << endl;        
+        cerr << endl << "Usage: rosrun ORB_SLAM2 Mono path_to_vocabulary path_to_settings" << endl;
         ros::shutdown();
         return 1;
-    }    
+    }
 
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
 	if (!strcmp(argv[3], "true"))
@@ -112,10 +112,10 @@ int main(int argc, char **argv)
 		bReuseMap = true;
 	}
    	ORB_SLAM2::System SLAM(argv[1],argv[2],ORB_SLAM2::System::MONOCULAR,true, bReuseMap);
-    
+
     //if (bReuseMap)
 		//SLAM.LoadMap("Slam_Map.bin");
-    
+
 	ImageGrabber igb(&SLAM);
 
 
@@ -124,7 +124,7 @@ int main(int argc, char **argv)
     // Pose broadcaster
     //pPosPub = new ros::Publisher;
     ros::Publisher PosPub = nodeHandler.advertise<geometry_msgs::PoseStamped>("ORB_SLAM/pose", 5);
-    
+
         igb.pPosPub = &(PosPub);
 
     ros::spin();
@@ -135,7 +135,7 @@ int main(int argc, char **argv)
 
     // Save map
     SLAM.SaveMap("Slam_latest_Map.bin");
-    
+
 
     // Save camera trajectory
     SLAM.SaveKeyFrameTrajectoryTUM("KeyFrameTrajectory.txt");
@@ -162,5 +162,3 @@ void ImageGrabber::GrabImage(const sensor_msgs::ImageConstPtr& msg)
     PublishPose(Tcw);
     //usleep(10000);
 }
-
-

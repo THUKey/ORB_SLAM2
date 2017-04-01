@@ -4,7 +4,7 @@ cd Thirdparty/DBoW2
 mkdir build
 cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release
-make -j
+make -j20
 
 cd ../../g2o
 
@@ -13,7 +13,7 @@ echo "Configuring and building Thirdparty/g2o ..."
 mkdir build
 cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release
-make -j
+make -j20
 
 cd ../../../
 
@@ -28,8 +28,8 @@ echo "Configuring and building ORB_SLAM2 ..."
 mkdir build
 cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release
-make -j$(nproc)
+make -j20
 cd ..
 
-echo "Converting vocabulary to binary"
-./tools/bin_vocabulary
+#echo "Converting vocabulary to binary"
+#./tools/bin_vocabulary
