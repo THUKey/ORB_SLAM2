@@ -18,7 +18,7 @@
 * along with ORB-SLAM2. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#define _DEBUG_
+// #define _DEBUG_
 
 
 #include "System.h"

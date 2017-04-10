@@ -1043,17 +1043,17 @@ static void computeDescriptors(const Mat& image, vector<KeyPoint>& keypoints, Ma
 void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPoint>& _keypoints,
                       OutputArray _descriptors)
 {
-    std::cout << "Start ORBextractor::operator()" << '\n';
+    // std::cout << "Start ORBextractor::operator()" << '\n';
     if(_image.empty())
         return;
 
     Mat image = _image.getMat();
     assert(image.type() == CV_8UC1 );
-    std::cout << "ComputePyramid" << '\n';
+    // std::cout << "ComputePyramid" << '\n';
     // Pre-compute the scale pyramid
     ComputePyramid(image);
 
-    std::cout << "ComputeKeyPointsOctTree" << '\n';
+    // std::cout << "ComputeKeyPointsOctTree" << '\n';
     vector < vector<KeyPoint> > allKeypoints;
     ComputeKeyPointsOctTree(allKeypoints);
     //ComputeKeyPointsOld(allKeypoints);
@@ -1111,7 +1111,7 @@ void ORBextractor::ComputePyramid(cv::Mat image)
     for (int level = 0; level < nlevels; ++level)
     {
         float scale = mvInvScaleFactor[level];
-        std::cout << "scale of level["<< level <<"]:" << scale << '\n';
+        // std::cout << "scale of level["<< level <<"]:" << scale << '\n';
         Size sz(cvRound((float)image.cols*scale), cvRound((float)image.rows*scale));
         Size wholeSize(sz.width + EDGE_THRESHOLD*2, sz.height + EDGE_THRESHOLD*2);
         Mat temp(wholeSize, image.type()), masktemp;
@@ -1120,16 +1120,16 @@ void ORBextractor::ComputePyramid(cv::Mat image)
         // Compute the resized image
         if( level != 0 )
         {
-            std::cout << "resize level["<< level <<"]:" << '\n';
+            // std::cout << "resize level["<< level <<"]:" << '\n';
             resize(mvImagePyramid[level-1], mvImagePyramid[level], sz, 0, 0, INTER_LINEAR);
 
-            std::cout << "copyMakeBorder level["<< level <<"]:" << '\n';
+            // std::cout << "copyMakeBorder level["<< level <<"]:" << '\n';
             copyMakeBorder(mvImagePyramid[level], temp, EDGE_THRESHOLD, EDGE_THRESHOLD, EDGE_THRESHOLD, EDGE_THRESHOLD,
                            BORDER_REFLECT_101+BORDER_ISOLATED);
         }
         else
         {
-            std::cout << "copyMakeBorder level["<< level <<"]:" << '\n';
+            // std::cout << "copyMakeBorder level["<< level <<"]:" << '\n';
             copyMakeBorder(image, temp, EDGE_THRESHOLD, EDGE_THRESHOLD, EDGE_THRESHOLD, EDGE_THRESHOLD,
                            BORDER_REFLECT_101);
         }

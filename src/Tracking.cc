@@ -18,7 +18,7 @@
 * along with ORB-SLAM2. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#define _DEBUG_
+// #define _DEBUG_
 
 
 #include "Tracking.h"
@@ -376,6 +376,7 @@ void Tracking::Track()
                 if(!bOK && is_preloaded)
                 {
                     bOK = Relocalization();
+                    if(!bOK) return;
                     MonocularInitialization_a();
                 }else
                 {

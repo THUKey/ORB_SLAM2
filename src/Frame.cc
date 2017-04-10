@@ -18,7 +18,7 @@
 * along with ORB-SLAM2. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#define _DEBUG_
+// #define _DEBUG_
 #include <iostream>
 
 #include "Frame.h"
@@ -218,7 +218,6 @@ Frame::Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor* extra
 
     // ORB extraction
     ExtractORB(0,imGray);
-    std::cout << "imGray : " << imGray.rows<<" x "<<imGray.cols << '\n';
 
     N = mvKeys.size();
 

@@ -110,6 +110,10 @@ add_executable(mono_tum
 Examples/Monocular/mono_tum.cc)
 target_link_libraries(mono_tum ${PROJECT_NAME})
 
+add_executable(mono
+Examples/Monocular/mono.cc)
+target_link_libraries(mono ${PROJECT_NAME})
+
 add_executable(mono_kitti
 Examples/Monocular/mono_kitti.cc)
 target_link_libraries(mono_kitti ${PROJECT_NAME})
