@@ -18,6 +18,8 @@
 * along with ORB-SLAM2. If not, see <http://www.gnu.org/licenses/>.
 */
 
+#define _DEBUG_
+
 
 #include "Tracking.h"
 
@@ -298,6 +300,9 @@ cv::Mat Tracking::GrabImageMonocular(const cv::Mat &im, const double &timestamp)
 
 void Tracking::Track()
 {
+    #ifdef _DEBUG_
+    std::cout << "Start Track" << '\n';
+    #endif
     if(mState==NO_IMAGES_YET)
     {
         mState = NOT_INITIALIZED;
@@ -321,6 +326,9 @@ void Tracking::Track()
         else
             MonocularInitialization();
 
+        #ifdef _DEBUG_
+        std::cout << "Start mpFrameDrawer->Update" << '\n';
+        #endif
         mpFrameDrawer->Update(this);
 
         if(mState!=OK)
@@ -608,6 +616,9 @@ void Tracking::StereoInitialization()
 
 void Tracking::MonocularInitialization()
 {
+    #ifdef _DEBUG_
+        std::cout << "Start MonocularInitialization" << '\n';
+    #endif
 
     if(!mpInitializer)
     {

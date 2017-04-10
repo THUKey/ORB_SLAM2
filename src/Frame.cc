@@ -18,6 +18,9 @@
 * along with ORB-SLAM2. If not, see <http://www.gnu.org/licenses/>.
 */
 
+#define _DEBUG_
+#include <iostream>
+
 #include "Frame.h"
 #include "Converter.h"
 #include "ORBmatcher.h"
@@ -177,6 +180,9 @@ Frame::Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor* extra
 {
     // Frame ID
     mnId=nNextId++;
+    #ifdef _DEBUG_
+    std::cout << "Frame id : " << mnId << '\n';
+    #endif
 
     // Scale Level Info
     mnScaleLevels = mpORBextractorLeft->GetLevels();
@@ -187,14 +193,41 @@ Frame::Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor* extra
     mvLevelSigma2 = mpORBextractorLeft->GetScaleSigmaSquares();
     mvInvLevelSigma2 = mpORBextractorLeft->GetInverseScaleSigmaSquares();
 
+    #ifdef _DEBUG_
+    // if(mnScaleLevels != NULL) std::cout << "mpORBextractorLeft->GetLevels()  get!\n";
+    // if(mfScaleFactor != NULL) std::cout << "mpORBextractorLeft->GetScaleFactor()    get!\n";
+    // if(mfLogScaleFactor != NULL) std::cout << "log(mfScaleFactor)   get!\n";
+    // if(mvScaleFactors != NULL) std::cout << "mpORBextractorLeft->GetScaleFactors()   get!\n";
+    // if(mvInvScaleFactors != NULL) std::cout << "mpORBextractorLeft->GetInverseScaleFactors()   get!\n";
+    // if(mvLevelSigma2 != NULL) std::cout << "mpORBextractorLeft->GetScaleSigmaSquares()   get!\n";
+    // if(mvInvLevelSigma2 != NULL) std::cout << "mpORBextractorLeft->GetInverseScaleSigmaSquares()   get!\n";
+    std::cout << mnScaleLevels << "mpORBextractorLeft->GetLevels()  get!\n";
+    std::cout << mfScaleFactor << "mpORBextractorLeft->GetScaleFactor()    get!\n";
+    std::cout << mfLogScaleFactor << "log(mfScaleFactor)   get!\n";
+    std::cout << mvScaleFactors[0] << "mpORBextractorLeft->GetScaleFactors()   get!\n";
+    std::cout << mvInvScaleFactors[0] << "mpORBextractorLeft->GetInverseScaleFactors()   get!\n";
+    std::cout << mvLevelSigma2[0] << "mpORBextractorLeft->GetScaleSigmaSquares()   get!\n";
+    std::cout << mvInvLevelSigma2[0] << "mpORBextractorLeft->GetInverseScaleSigmaSquares()   get!\n";
+    #endif
+
+
+    #ifdef _DEBUG_
+    std::cout << "Start ExtractORB" << '\n';
+    std::cout << "imGray : " << imGray.rows<<" x "<<imGray.cols << '\n';
+    #endif
+
     // ORB extraction
     ExtractORB(0,imGray);
+    std::cout << "imGray : " << imGray.rows<<" x "<<imGray.cols << '\n';
 
     N = mvKeys.size();
 
     if(mvKeys.empty())
         return;
 
+    #ifdef _DEBUG_
+    std::cout << "Start UndistortKeyPoints" << '\n';
+    #endif
     UndistortKeyPoints();
 
     // Set no stereo information
@@ -207,6 +240,9 @@ Frame::Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor* extra
     // This is done only for the first Frame (or after a change in the calibration)
     if(mbInitialComputations)
     {
+        #ifdef _DEBUG_
+        std::cout << "Start ComputeImageBounds for initialization" << '\n';
+        #endif
         ComputeImageBounds(imGray);
 
         mfGridElementWidthInv=static_cast<float>(FRAME_GRID_COLS)/static_cast<float>(mnMaxX-mnMinX);
@@ -224,6 +260,9 @@ Frame::Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor* extra
 
     mb = mbf/fx;
 
+    #ifdef _DEBUG_
+    std::cout << "Start AssignFeaturesToGrid" << '\n';
+    #endif
     AssignFeaturesToGrid();
 }
 
