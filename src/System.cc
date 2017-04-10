@@ -26,11 +26,18 @@
 #include <pangolin/pangolin.h>
 #include <iomanip>
 
+
+
+bool has_suffix(const std::string &str, const std::string &suffix) {
+  std::size_t index = str.find(suffix, str.size() - suffix.size());
+  return (index != std::string::npos);
+}
+
 namespace ORB_SLAM2
 {
 
 System::System(const string &strVocFile, const string &strSettingsFile, const eSensor sensor,
-               const bool bUseViewer):mSensor(sensor), mpViewer(static_cast<Viewer*>(NULL)), mbReset(false),mbActivateLocalizationMode(false),
+               const bool bUseViewer, const bool bReuse):mSensor(sensor), mpViewer(static_cast<Viewer*>(NULL)), mbReset(false),mbActivateLocalizationMode(bReuse),
         mbDeactivateLocalizationMode(false)
 {
     // Output welcome message
@@ -62,7 +69,13 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     cout << endl << "Loading ORB Vocabulary. This could take a while..." << endl;
 
     mpVocabulary = new ORBVocabulary();
-    bool bVocLoad = mpVocabulary->loadFromTextFile(strVocFile);
+    // bool bVocLoad = mpVocabulary->loadFromTextFile(strVocFile);
+    bool bVocLoad = false; // chose loading method based on file extension
+    if (has_suffix(strVocFile, ".txt"))
+        bVocLoad = mpVocabulary->loadFromTextFile(strVocFile);
+    else
+        bVocLoad = mpVocabulary->loadFromBinaryFile(strVocFile);
+
     if(!bVocLoad)
     {
         cerr << "Wrong path to vocabulary. " << endl;
@@ -75,16 +88,59 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     mpKeyFrameDatabase = new KeyFrameDatabase(*mpVocabulary);
 
     //Create the Map
-    mpMap = new Map();
+    // mpMap = new Map();
+    if (!bReuse)
+    {
+        mpMap = new Map();
+    }
+
+	if (bReuse)
+	{
+		LoadMap("Slam_latest_Map.bin");
+
+        //mpKeyFrameDatabase->set_vocab(mpVocabulary);
+
+        vector<ORB_SLAM2::KeyFrame*> vpKFs = mpMap->GetAllKeyFrames();
+        for (vector<ORB_SLAM2::KeyFrame*>::iterator it = vpKFs.begin(); it != vpKFs.end(); ++it) {
+            (*it)->SetKeyFrameDatabase(mpKeyFrameDatabase);
+            (*it)->SetORBvocabulary(mpVocabulary);
+            (*it)->SetMap(mpMap);
+            (*it)->ComputeBoW();
+            mpKeyFrameDatabase->add(*it);
+            (*it)->SetMapPoints(mpMap->GetAllMapPoints());
+            (*it)->SetSpanningTree(vpKFs);
+            (*it)->SetGridParams(vpKFs);
+
+            // Reconstruct map points Observation
+
+        }
+
+        vector<ORB_SLAM2::MapPoint*> vpMPs = mpMap->GetAllMapPoints();
+        for (vector<ORB_SLAM2::MapPoint*>::iterator mit = vpMPs.begin(); mit != vpMPs.end(); ++mit) {
+            (*mit)->SetMap(mpMap);
+            (*mit)->SetObservations(vpKFs);
+
+        }
+
+        for (vector<ORB_SLAM2::KeyFrame*>::iterator it = vpKFs.begin(); it != vpKFs.end(); ++it) {
+            (*it)->UpdateConnections();
+        }
+
+
+	}
+	cout << endl << mpMap <<" : is the created map address" << endl;
+
+
+
 
     //Create Drawers. These are used by the Viewer
-    mpFrameDrawer = new FrameDrawer(mpMap);
+    mpFrameDrawer = new FrameDrawer(mpMap, bReuse);
     mpMapDrawer = new MapDrawer(mpMap, strSettingsFile);
 
     //Initialize the Tracking thread
     //(it will live in the main thread of execution, the one that called this constructor)
     mpTracker = new Tracking(this, mpVocabulary, mpFrameDrawer, mpMapDrawer,
-                             mpMap, mpKeyFrameDatabase, strSettingsFile, mSensor);
+                             mpMap, mpKeyFrameDatabase, strSettingsFile, mSensor, bReuse);
 
     //Initialize the Local Mapping thread and launch
     mpLocalMapper = new LocalMapping(mpMap, mSensor==MONOCULAR);
@@ -97,7 +153,7 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     //Initialize the Viewer thread and launch
     if(bUseViewer)
     {
-        mpViewer = new Viewer(this, mpFrameDrawer,mpMapDrawer,mpTracker,strSettingsFile);
+        mpViewer = new Viewer(this, mpFrameDrawer,mpMapDrawer,mpTracker,strSettingsFile, bReuse);
         mptViewer = new thread(&Viewer::Run, mpViewer);
         mpTracker->SetViewer(mpViewer);
     }
@@ -119,7 +175,7 @@ cv::Mat System::TrackStereo(const cv::Mat &imLeft, const cv::Mat &imRight, const
     {
         cerr << "ERROR: you called TrackStereo but input sensor was not set to STEREO." << endl;
         exit(-1);
-    }   
+    }
 
     // Check mode change
     {
@@ -170,7 +226,7 @@ cv::Mat System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap, const doub
     {
         cerr << "ERROR: you called TrackRGBD but input sensor was not set to RGBD." << endl;
         exit(-1);
-    }    
+    }
 
     // Check mode change
     {
@@ -318,6 +374,36 @@ void System::Shutdown()
     if(mpViewer)
         pangolin::BindToContext("ORB-SLAM2: Map Viewer");
 }
+
+void System::LoadMap(const string &filename)
+{
+    {
+        std::ifstream is(filename);
+
+
+        boost::archive::binary_iarchive ia(is, boost::archive::no_header);
+        //ia >> mpKeyFrameDatabase;
+        ia >> mpMap;
+
+    }
+
+    cout << endl << filename <<" : Map Loaded!" << endl;
+
+
+}
+
+void System::SaveMap(const string &filename)
+{
+    std::ofstream os(filename);
+    {
+        boost::archive::binary_oarchive oa(os, boost::archive::no_header);
+        //oa << mpKeyFrameDatabase;
+        oa << mpMap;
+    }
+    cout << endl << "Map saved to " << filename << endl;
+
+}
+
 
 void System::SaveTrajectoryTUM(const string &filename)
 {

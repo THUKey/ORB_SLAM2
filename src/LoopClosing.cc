@@ -74,7 +74,7 @@ void LoopClosing::Run()
                    CorrectLoop();
                }
             }
-        }       
+        }
 
         ResetIfRequested();
 
@@ -579,9 +579,9 @@ void LoopClosing::CorrectLoop()
     mpThreadGBA = new thread(&LoopClosing::RunGlobalBundleAdjustment,this,mpCurrentKF->mnId);
 
     // Loop closed. Release Local Mapping.
-    mpLocalMapper->Release();    
+    mpLocalMapper->Release();
 
-    mLastLoopKFid = mpCurrentKF->mnId;   
+    mLastLoopKFid = mpCurrentKF->mnId;
 }
 
 void LoopClosing::SearchAndFuse(const KeyFrameAndPose &CorrectedPosesMap)
@@ -679,11 +679,16 @@ void LoopClosing::RunGlobalBundleAdjustment(unsigned long nLoopKF)
             while(!lpKFtoCheck.empty())
             {
                 KeyFrame* pKF = lpKFtoCheck.front();
+                if (!pKF)
+                    continue;
+
                 const set<KeyFrame*> sChilds = pKF->GetChilds();
                 cv::Mat Twc = pKF->GetPoseInverse();
                 for(set<KeyFrame*>::const_iterator sit=sChilds.begin();sit!=sChilds.end();sit++)
                 {
                     KeyFrame* pChild = *sit;
+                    if (!pChild)
+                        continue;
                     if(pChild->mnBAGlobalForKF!=nLoopKF)
                     {
                         cv::Mat Tchildc = pChild->GetPose()*Twc;
@@ -718,8 +723,18 @@ void LoopClosing::RunGlobalBundleAdjustment(unsigned long nLoopKF)
                 {
                     // Update according to the correction of its reference keyframe
                     KeyFrame* pRefKF = pMP->GetReferenceKeyFrame();
+                    if(!pRefKF)
+                        continue;
 
                     if(pRefKF->mnBAGlobalForKF!=nLoopKF)
+                        continue;
+                   cout << "RunGlobalBundleAdjustment CP " << pRefKF->mnId
+                        << " " << pRefKF->mTcwBefGBA.rows
+                        << " " << pRefKF->mTcwBefGBA.cols << endl;
+                    fflush(stdout);
+
+                    /* TODO : Stop-Gap for Loop Closure. Size coming as Zero! */
+                    if (!pRefKF->mTcwBefGBA.rows || !pRefKF->mTcwBefGBA.cols)
                         continue;
 
                     // Map to non-corrected camera
@@ -734,7 +749,7 @@ void LoopClosing::RunGlobalBundleAdjustment(unsigned long nLoopKF)
 
                     pMP->SetWorldPos(Rwc*Xc+twc);
                 }
-            }            
+            }
 
             mpMap->InformNewBigChange();
 
