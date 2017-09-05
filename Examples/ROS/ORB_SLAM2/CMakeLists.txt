@@ -30,12 +30,13 @@ endif()
 
 LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/../../../cmake_modules)
 
-#find_package(OpenCV 3.0 QUIET)
-find_package(OpenCV 2.4.9 QUIET)
+#find_package(OpenCV 2.4.9 QUIET)
+find_package(OpenCV 3.2 QUIET)
 if(NOT OpenCV_FOUND)
-   find_package(OpenCV 2.4.3 QUIET)
+   message( "OpenCV 3.2 not found.")
+   find_package(OpenCV 2.4.9 QUIET)
    if(NOT OpenCV_FOUND)
-      message(FATAL_ERROR "OpenCV > 2.4.3 not found.")
+      message(FATAL_ERROR "OpenCV > 2.4.9 not found.")
    endif()
 endif()
 
@@ -57,7 +58,7 @@ ${PROJECT_SOURCE_DIR}/../../../Thirdparty/DBoW2/lib/libDBoW2.so
 ${PROJECT_SOURCE_DIR}/../../../Thirdparty/g2o/lib/libg2o.so
 ${PROJECT_SOURCE_DIR}/../../../lib/libORB_SLAM2.so
 )
-# 
+#
 # # Node for monocular camera
 # rosbuild_add_executable(Mono
 # src/ros_mono.cc

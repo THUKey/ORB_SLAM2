@@ -28,13 +28,14 @@ endif()
 
 LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules)
 
-#find_package(OpenCV 3.0 QUIET)
-find_package(OpenCV 2.4.9 QUIET)
+
+#find_package(OpenCV 2.4.9 QUIET)
+find_package(OpenCV 3.2 QUIET)
 if(NOT OpenCV_FOUND)
-   message("OpenCV  3.0 not found.")
-   find_package(OpenCV 2.4.3 QUIET)
+   message( "OpenCV 3.2 not found.")
+   find_package(OpenCV 2.4.9 QUIET)
    if(NOT OpenCV_FOUND)
-      message(FATAL_ERROR "OpenCV > 2.4.3 not found.")
+      message(FATAL_ERROR "OpenCV > 2.4.9 not found.")
    endif()
 endif()
 

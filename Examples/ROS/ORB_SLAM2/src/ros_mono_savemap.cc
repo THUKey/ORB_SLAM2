@@ -86,7 +86,7 @@ void ImageGrabber::PublishPose(cv::Mat Tcw)
         poseMSG.pose.orientation.w = q[3];
         poseMSG.header.frame_id = "VSLAM";
         poseMSG.header.stamp = ros::Time::now();
-        //cout << "PublishPose position.x = " << poseMSG.pose.position.x << endl;
+        cout << "PublishPose position.x = " << poseMSG.pose.position.x << endl;
 
         (pPosPub)->publish(poseMSG);
 
@@ -159,6 +159,6 @@ void ImageGrabber::GrabImage(const sensor_msgs::ImageConstPtr& msg)
     }
 
     cv::Mat Tcw= mpSLAM->TrackMonocular(cv_ptr->image,cv_ptr->header.stamp.toSec());
-    // PublishPose(Tcw);
+    PublishPose(Tcw);
     //usleep(10000);
 }
